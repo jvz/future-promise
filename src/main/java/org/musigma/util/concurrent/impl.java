@@ -54,13 +54,13 @@ final class impl {
         }
 
         private DefaultPromise<T> promise(final DefaultPromise<T> owner) {
-            DefaultPromise<T> current = ref.get();
+            final DefaultPromise<T> current = ref.get();
             return compressed(current, current, owner);
         }
 
         @SuppressWarnings("unchecked")
         private DefaultPromise<T> compressed(final DefaultPromise<T> current, final DefaultPromise<T> target, final DefaultPromise<T> owner) {
-            Object value = target.ref.get();
+            final Object value = target.ref.get();
             if (value instanceof Callbacks) {
                 if (ref.compareAndSet(current, target)) {
                     return target; // linked
@@ -70,8 +70,7 @@ final class impl {
             } else if (value instanceof Link) {
                 return compressed(current, ((Link<T>) value).ref.get(), owner);
             } else {
-                final Try<T> t = (Try<T>) value;
-                owner.unlink(t);
+                owner.unlink((Try<T>) value);
                 return owner;
             }
         }
@@ -213,7 +212,7 @@ final class impl {
             }
             final Object state = ref.get();
             if (state instanceof Try) {
-                Try<T> value = (Try<T>) state;
+                final Try<T> value = (Try<T>) state;
                 if (!target.tryComplete(target.ref.get(), value)) {
                     throw new IllegalStateException("cannot link promises");
                 }
@@ -238,7 +237,7 @@ final class impl {
         void unlink(final Try<T> resolved) {
             final Object state = ref.get();
             if (state instanceof Link) {
-                Link<T> link = (Link<T>) state;
+                final Link<T> link = (Link<T>) state;
                 final DefaultPromise<T> next = ref.compareAndSet(link, resolved) ? link.ref.get() : this;
                 next.unlink(resolved);
             } else {
@@ -253,7 +252,7 @@ final class impl {
                 submitWithValue(callbacks, value);
                 return callbacks;
             } else if (state instanceof Callbacks) {
-                final Callbacks value = (Callbacks) state;
+                final Callbacks<T> value = (Callbacks<T>) state;
                 if (ref.compareAndSet(value, value == NOOP ? callbacks : concatCallbacks(callbacks, value))) {
                     return callbacks;
                 } else {
@@ -261,7 +260,7 @@ final class impl {
                     return dispatchOrAddCallbacks(ref.get(), callbacks);
                 }
             } else {
-                DefaultPromise<T> promise = ((Link<T>) state).promise(this);
+                final DefaultPromise<T> promise = ((Link<T>) state).promise(this);
                 return promise.dispatchOrAddCallbacks(promise.ref.get(), callbacks);
             }
         }
@@ -360,7 +359,7 @@ final class impl {
             try {
                 scheduler.execute(this);
             } catch (final Throwable t) {
-                Scheduler scheduler = this.scheduler;
+                final Scheduler scheduler = this.scheduler;
                 this.scheduler = null;
                 function = null;
                 argument = null;
@@ -369,11 +368,11 @@ final class impl {
         }
 
         private void handleFailure(final Throwable t, final Scheduler scheduler) {
-            boolean wasInterrupted = t instanceof InterruptedException;
+            final boolean wasInterrupted = t instanceof InterruptedException;
             if (!wasInterrupted) {
                 Exceptions.rethrowIfFatal(t);
             }
-            boolean completed = tryComplete(ref.get(), resolve(new Failure<>(t)));
+            final boolean completed = tryComplete(ref.get(), resolve(new Failure<>(t)));
             if (completed && wasInterrupted) {
                 Thread.currentThread().interrupt();
             }

@@ -5,7 +5,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.musigma.util.Failure;
 
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 
