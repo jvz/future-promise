@@ -5,6 +5,23 @@ import org.musigma.util.function.Predicate;
 import org.musigma.util.function.Supplier;
 
 public interface Try<T> {
+
+    static <T> Try<T> fromSupplier(final Supplier<T> supplier) {
+        try {
+            return new Success<>(supplier.get());
+        } catch (Throwable throwable) {
+            return new Failure<>(throwable);
+        }
+    }
+
+    static <T> Try<T> successful(final T result) {
+        return new Success<>(result);
+    }
+
+    static <T> Try<T> failed(final Throwable throwable) {
+        return new Failure<>(throwable);
+    }
+
     boolean isFailure();
 
     boolean isSuccess();
