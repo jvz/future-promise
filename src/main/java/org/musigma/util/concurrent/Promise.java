@@ -6,11 +6,11 @@ import org.musigma.util.Try;
 
 public interface Promise<T> {
     static <T> Promise<T> newPromise() {
-        return new impl.DefaultPromise<>(null);
+        return new DefaultPromise<>(null);
     }
 
     static <T> Promise<T> fromTry(final Try<T> result) {
-        return new impl.DefaultPromise<>(result);
+        return new DefaultPromise<>(result);
     }
 
     static <T> Promise<T> successful(final T result) {
