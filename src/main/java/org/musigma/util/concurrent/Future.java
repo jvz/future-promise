@@ -1,6 +1,6 @@
 package org.musigma.util.concurrent;
 
-import org.musigma.util.Try;
+import org.musigma.util.Thunk;
 import org.musigma.util.function.Consumer;
 import org.musigma.util.function.Function;
 import org.musigma.util.function.Predicate;
@@ -8,10 +8,6 @@ import org.musigma.util.function.Predicate;
 import java.util.Optional;
 
 public interface Future<T> extends java.util.concurrent.Future<T> {
-
-    static <T> Future<T> fromTry(final Try<T> result) {
-        return Promise.fromTry(result).future();
-    }
 
     static <T> Future<T> successful(final T result) {
         return Promise.successful(result).future();
@@ -21,13 +17,13 @@ public interface Future<T> extends java.util.concurrent.Future<T> {
         return Promise.<T>failed(throwable).future();
     }
 
-    default void onComplete(final Consumer<Try<T>> consumer) {
+    default void onComplete(final Consumer<Thunk<T>> consumer) {
         onComplete(consumer, Scheduler.common());
     }
 
-    void onComplete(final Consumer<Try<T>> consumer, final Scheduler scheduler);
+    void onComplete(final Consumer<Thunk<T>> consumer, final Scheduler scheduler);
 
-    Optional<Try<T>> getCurrent();
+    Optional<Thunk<T>> getCurrent();
 
     default <U> Future<U> map(final Function<? super T, ? extends U> function) {
         return map(function, Scheduler.common());
@@ -47,9 +43,9 @@ public interface Future<T> extends java.util.concurrent.Future<T> {
 
     Future<T> filter(final Predicate<? super T> predicate, final Scheduler scheduler);
 
-    default <U> Future<U> transform(final Function<Try<T>, Try<U>> function) {
+    default <U> Future<U> transform(final Function<Thunk<T>, Thunk<U>> function) {
         return transform(function, Scheduler.common());
     }
 
-    <U> Future<U> transform(final Function<Try<T>, Try<U>> function, final Scheduler scheduler);
+    <U> Future<U> transform(final Function<Thunk<T>, Thunk<U>> function, final Scheduler scheduler);
 }

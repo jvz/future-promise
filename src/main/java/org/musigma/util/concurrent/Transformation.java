@@ -1,13 +1,10 @@
 package org.musigma.util.concurrent;
 
 import org.musigma.util.Exceptions;
-import org.musigma.util.Failure;
-import org.musigma.util.Success;
-import org.musigma.util.Try;
+import org.musigma.util.Thunk;
 import org.musigma.util.function.Function;
 import org.musigma.util.function.Predicate;
 
-import java.util.NoSuchElementException;
 import java.util.Objects;
 
 class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Runnable {
@@ -16,11 +13,11 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
 
     private Function<Object, Object> function;
     private Scheduler scheduler;
-    private Try<F> argument;
+    private Thunk<F> argument;
     private Transform transform;
 
     @SuppressWarnings("unchecked")
-    Transformation(final Function<?, ?> function, final Scheduler scheduler, final Try<F> argument, final Transform transform) {
+    Transformation(final Function<?, ?> function, final Scheduler scheduler, final Thunk<F> argument, final Transform transform) {
         super(NOOP);
         this.function = (Function<Object, Object>) function;
         this.scheduler = scheduler;
@@ -28,13 +25,13 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
         this.transform = transform;
     }
 
-    private static <T> Try<T> resolve(final Try<T> value) {
+    private static <T> Thunk<T> resolve(final Thunk<T> value) {
         Objects.requireNonNull(value);
         // TODO: this can support the use of a ControlThrowable and similar
         return value;
     }
 
-    void submitWithValue(final Try<F> resolved) {
+    void submitWithValue(final Thunk<F> resolved) {
         argument = resolved;
         try {
             scheduler.execute(this);
@@ -52,7 +49,7 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
         if (!wasInterrupted) {
             Exceptions.rethrowIfFatal(t);
         }
-        final boolean completed = tryComplete(ref.get(), resolve(new Failure<>(t)));
+        final boolean completed = tryComplete(ref.get(), resolve(Thunk.error(t)));
         if (completed && wasInterrupted) {
             Thread.currentThread().interrupt();
         }
@@ -66,23 +63,26 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
     @SuppressWarnings("unchecked")
     @Override
     public void run() {
-        final Try<F> value = this.argument;
+        final Thunk<F> value = this.argument;
         this.argument = null;
         final Function<Object, Object> function = this.function;
         this.function = null;
         final Scheduler scheduler = this.scheduler;
         this.scheduler = null;
         try {
-            Try<?> resolvedResult = null;
+            Thunk<T> resolvedResult = null;
             switch (transform) {
                 case noop:
                     break;
 
-                case map:
-                    resolvedResult = value.isSuccess() ? new Success<>(function.apply(value.get())) : value;
+                case map: {
+                    final Function<? super F, ? extends T> f = (Function<? super F, ? extends T>) function;
+                    resolvedResult = resolve(value.map(f));
+//                    resolvedResult = value.isSuccess() ? Thunk.value(function.apply(value.get())) : value;
                     break;
+                }
 
-                case flatMap:
+                case flatMap: {
                     if (value.isSuccess()) {
                         final Object f = function.apply(value.get());
                         if (f instanceof DefaultPromise) {
@@ -91,28 +91,33 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
                             completeWith((Future<T>) f);
                         }
                     } else {
-                        resolvedResult = value;
+                        resolvedResult = value.recastIfError();
                     }
                     break;
+                }
 
-                case transform:
-                    resolvedResult = resolve((Try<T>) function.apply(value));
+                case transform: {
+                    resolvedResult = resolve((Thunk<T>) function.apply(value));
                     break;
+                }
 
-                case onComplete:
+                case onComplete: {
                     function.apply(value);
                     break;
+                }
 
-                case filter:
+                case filter: {
                     final Predicate<F> predicate = (Predicate) function;
-                    resolvedResult = value.isFailure() || predicate.test(value.get()) ? value : new Failure<>(new NoSuchElementException("filter predicate failed"));
+                    resolvedResult = resolve(value.filter(predicate)).recast();
+//                    resolvedResult = value.isError() || predicate.test(value.get()) ? value.recast() : Thunk.error(new NoSuchElementException("filter predicate failed"));
                     break;
+                }
 
                 default:
                     throw new UnsupportedOperationException("Unknown transformation type");
             }
             if (resolvedResult != null) {
-                tryComplete(ref.get(), (Try<T>) resolvedResult);
+                tryComplete(ref.get(), resolvedResult);
             }
         } catch (Throwable throwable) {
             handleFailure(throwable, scheduler);

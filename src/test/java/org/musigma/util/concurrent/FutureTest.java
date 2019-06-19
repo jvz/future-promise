@@ -3,12 +3,13 @@ package org.musigma.util.concurrent;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.musigma.util.Failure;
+import org.musigma.util.Thunk;
 
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class FutureTest {
 
@@ -51,7 +52,7 @@ public class FutureTest {
     public void testTransform() throws ExecutionException, InterruptedException {
         Future<Integer> testLength = Future.successful("test").transform(result -> result.map(String::length));
         assertEquals(4, (int) testLength.get());
-        Future<String> resultFuture = Future.successful("test").transform(ignored -> new Failure<>(new IllegalStateException()));
+        Future<String> resultFuture = Future.successful("test").transform(ignored -> Thunk.error(new IllegalStateException()));
         expectedException.expect(IllegalStateException.class);
         resultFuture.get();
     }

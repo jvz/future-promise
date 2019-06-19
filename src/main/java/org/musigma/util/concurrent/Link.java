@@ -1,6 +1,6 @@
 package org.musigma.util.concurrent;
 
-import org.musigma.util.Try;
+import org.musigma.util.Thunk;
 
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -28,7 +28,7 @@ class Link<T> {
         } else if (value instanceof Link) {
             return compressed(current, ((Link<T>) value).ref.get(), owner);
         } else {
-            owner.unlink((Try<T>) value);
+            owner.unlink((Thunk<T>) value);
             return owner;
         }
     }

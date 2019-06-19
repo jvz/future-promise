@@ -1,33 +1,31 @@
 package org.musigma.util.concurrent;
 
-import org.musigma.util.Failure;
-import org.musigma.util.Success;
-import org.musigma.util.Try;
+import org.musigma.util.Thunk;
 
 public interface Promise<T> {
     static <T> Promise<T> newPromise() {
         return new DefaultPromise<>(null);
     }
 
-    static <T> Promise<T> fromTry(final Try<T> result) {
+    static <T> Promise<T> fromThunk(final Thunk<T> result) {
         return new DefaultPromise<>(result);
     }
 
     static <T> Promise<T> successful(final T result) {
-        return fromTry(new Success<>(result));
+        return fromThunk(Thunk.value(result));
     }
 
     static <T> Promise<T> failed(final Throwable throwable) {
-        return fromTry(new Failure<>(throwable));
+        return fromThunk(Thunk.error(throwable));
     }
 
     Future<T> future();
 
     boolean isDone();
 
-    boolean tryComplete(final Try<T> result);
+    boolean tryComplete(final Thunk<T> result);
 
-    default Promise<T> complete(final Try<T> result) {
+    default Promise<T> complete(final Thunk<T> result) {
         if (tryComplete(result)) {
             return this;
         } else {
@@ -35,26 +33,25 @@ public interface Promise<T> {
         }
     }
 
-    default Promise<T> completeWith(final Future<T> other) {
+    default void completeWith(final Future<T> other) {
         if (future() != other) {
             other.onComplete(this::tryComplete, Scheduler.inline());
         }
-        return this;
     }
 
     default Promise<T> success(final T value) {
-        return complete(new Success<>(value));
+        return complete(Thunk.value(value));
     }
 
     default boolean trySuccess(final T value) {
-        return tryComplete(new Success<>(value));
+        return tryComplete(Thunk.value(value));
     }
 
     default Promise<T> failure(final Throwable throwable) {
-        return complete(new Failure<>(throwable));
+        return complete(Thunk.error(throwable));
     }
 
     default boolean tryFailure(final Throwable throwable) {
-        return tryComplete(new Failure<>(throwable));
+        return tryComplete(Thunk.error(throwable));
     }
 }

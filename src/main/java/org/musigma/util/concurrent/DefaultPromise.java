@@ -1,7 +1,7 @@
 package org.musigma.util.concurrent;
 
-import org.musigma.util.Failure;
-import org.musigma.util.Try;
+import org.musigma.util.Exceptions;
+import org.musigma.util.Thunk;
 import org.musigma.util.function.Consumer;
 import org.musigma.util.function.Function;
 import org.musigma.util.function.Predicate;
@@ -21,15 +21,15 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
     }
 
     @Override
-    public Optional<Try<T>> getCurrent() {
+    public Optional<Thunk<T>> getCurrent() {
         return Optional.ofNullable(getCurrentValue());
     }
 
     @SuppressWarnings("unchecked")
-    private Try<T> getCurrentValue() {
+    private Thunk<T> getCurrentValue() {
         final Object state = ref.get();
-        if (state instanceof Try) {
-            return (Try<T>) state;
+        if (state instanceof Thunk) {
+            return (Thunk<T>) state;
         } else if (state instanceof Link) {
             return ((Link<T>) state).promise(this).getCurrentValue();
         } else {
@@ -64,15 +64,20 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
 
     @Override
     public T get(final long timeout, final TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-        return tryGet(timeout, unit).get();
+        try {
+            return tryGet(timeout, unit).get();
+        } catch (final Throwable throwable) {
+            Exceptions.rethrow(throwable);
+            return null;
+        }
     }
 
-    private Try<T> tryGet(final long timeout, final TimeUnit unit) throws InterruptedException, TimeoutException {
-        final Try<T> v = getCurrentValue();
+    private Thunk<T> tryGet(final long timeout, final TimeUnit unit) throws InterruptedException, TimeoutException {
+        final Thunk<T> v = getCurrentValue();
         if (v != null) {
             return v;
         }
-        Try<T> result = null;
+        Thunk<T> result = null;
         if (timeout >= 0) {
             final CompletionLatch<T> latch = new CompletionLatch<>();
             onComplete(latch, Scheduler.inline());
@@ -95,13 +100,13 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
     }
 
     @Override
-    public boolean tryComplete(final Try<T> result) {
+    public boolean tryComplete(final Thunk<T> result) {
         final Object state = ref.get();
-        return !(state instanceof Try) && tryComplete(state, result);
+        return !(state instanceof Thunk) && tryComplete(state, result);
     }
 
     @SuppressWarnings("unchecked")
-    boolean tryComplete(final Object state, final Try<T> resolved) {
+    boolean tryComplete(final Object state, final Thunk<T> resolved) {
         Object currentState = state;
         while (true) {
             if (currentState instanceof Callbacks) {
@@ -123,7 +128,7 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
         }
     }
 
-    private void submitWithValue(final Callbacks<T> callbacks, final Try<T> resolved) {
+    private void submitWithValue(final Callbacks<T> callbacks, final Thunk<T> resolved) {
         Callbacks<T> c = callbacks;
         while (c instanceof ManyCallbacks) {
             final ManyCallbacks<T> m = (ManyCallbacks<T>) c;
@@ -141,8 +146,8 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
             return;
         }
         final Object state = ref.get();
-        if (state instanceof Try) {
-            final Try<T> value = (Try<T>) state;
+        if (state instanceof Thunk) {
+            final Thunk<T> value = (Thunk<T>) state;
             if (!target.tryComplete(target.ref.get(), value)) {
                 throw new IllegalStateException("cannot link promises");
             }
@@ -164,7 +169,7 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
     }
 
     @SuppressWarnings("unchecked")
-    void unlink(final Try<T> resolved) {
+    void unlink(final Thunk<T> resolved) {
         final Object state = ref.get();
         if (state instanceof Link) {
             final Link<T> link = (Link<T>) state;
@@ -177,8 +182,8 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
 
     @SuppressWarnings("unchecked")
     private <C extends Callbacks<T>> C dispatchOrAddCallbacks(final Object state, final C callbacks) {
-        if (state instanceof Try) {
-            final Try<T> value = (Try<T>) state;
+        if (state instanceof Thunk) {
+            final Thunk<T> value = (Thunk<T>) state;
             submitWithValue(callbacks, value);
             return callbacks;
         } else if (state instanceof Callbacks) {
@@ -207,7 +212,7 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
     }
 
     @Override
-    public void onComplete(final Consumer<Try<T>> consumer, final Scheduler scheduler) {
+    public void onComplete(final Consumer<Thunk<T>> consumer, final Scheduler scheduler) {
         dispatchOrAddCallbacks(ref.get(), new Transformation<T, Void>(consumer, scheduler, null, Transform.onComplete));
     }
 
@@ -215,7 +220,7 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
     @Override
     public <U> Future<U> map(final Function<? super T, ? extends U> function, final Scheduler scheduler) {
         final Object state = ref.get();
-        if (state instanceof Failure) {
+        if (state instanceof Thunk && ((Thunk<?>) state).isError()) {
             return (Future<U>) this;
         } else {
             return dispatchOrAddCallbacks(state, new Transformation<>(function, scheduler, null, Transform.map));
@@ -226,7 +231,7 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
     @Override
     public <U> Future<U> flatMap(final Function<? super T, ? extends Future<U>> function, final Scheduler scheduler) {
         final Object state = ref.get();
-        if (state instanceof Failure) {
+        if (state instanceof Thunk && ((Thunk<?>) state).isError()) {
             return (Future<U>) this;
         } else {
             return dispatchOrAddCallbacks(state, new Transformation<>(function, scheduler, null, Transform.flatMap));
@@ -236,7 +241,7 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
     @Override
     public Future<T> filter(final Predicate<? super T> predicate, final Scheduler scheduler) {
         final Object state = ref.get();
-        if (state instanceof Failure) {
+        if (state instanceof Thunk && ((Thunk<?>) state).isError()) {
             return this;
         } else {
             return dispatchOrAddCallbacks(state, new Transformation<>(predicate, scheduler, null, Transform.filter));
@@ -244,7 +249,7 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
     }
 
     @Override
-    public <U> Future<U> transform(final Function<Try<T>, Try<U>> function, final Scheduler scheduler) {
+    public <U> Future<U> transform(final Function<Thunk<T>, Thunk<U>> function, final Scheduler scheduler) {
         return dispatchOrAddCallbacks(ref.get(), new Transformation<>(function, scheduler, null, Transform.transform));
     }
 }

@@ -1,15 +1,15 @@
 package org.musigma.util.concurrent;
 
-import org.musigma.util.Try;
+import org.musigma.util.Thunk;
 import org.musigma.util.function.Consumer;
 
 import java.util.concurrent.locks.AbstractQueuedSynchronizer;
 
-class CompletionLatch<T> extends AbstractQueuedSynchronizer implements Consumer<Try<T>> {
+class CompletionLatch<T> extends AbstractQueuedSynchronizer implements Consumer<Thunk<T>> {
     // avoid using volatile by using acquire/release
-    private Try<T> result;
+    private Thunk<T> result;
 
-    Try<T> getResult() {
+    Thunk<T> getResult() {
         return result;
     }
 
@@ -25,7 +25,7 @@ class CompletionLatch<T> extends AbstractQueuedSynchronizer implements Consumer<
     }
 
     @Override
-    public void accept(final Try<T> value) {
+    public void accept(final Thunk<T> value) {
         result = value;
         releaseShared(1);
     }
