@@ -35,7 +35,7 @@ public interface Promise<T> {
 
     default void completeWith(final Future<T> other) {
         if (future() != other) {
-            other.onComplete(this::tryComplete, Scheduler.inline());
+            other.onComplete(this::tryComplete, Scheduler.parasitic());
         }
     }
 

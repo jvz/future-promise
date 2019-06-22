@@ -9,7 +9,7 @@ import java.util.Objects;
 
 class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Runnable {
 
-    static Transformation<?, ?> NOOP = new Transformation<>(null, Scheduler.inline(), null, Transform.noop);
+    static Transformation<?, ?> NOOP = new Transformation<>(null, Scheduler.parasitic(), null, Transform.noop);
 
     private Function<Object, Object> function;
     private Scheduler scheduler;

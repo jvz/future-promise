@@ -80,7 +80,7 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
         Thunk<T> result = null;
         if (timeout >= 0) {
             final CompletionLatch<T> latch = new CompletionLatch<>();
-            onComplete(latch, Scheduler.inline());
+            onComplete(latch, Scheduler.parasitic());
             if (timeout == 0) {
                 latch.acquireSharedInterruptibly(1);
             } else {

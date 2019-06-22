@@ -9,7 +9,7 @@ public interface Scheduler extends Executor {
         return SchedulerAdapter.fromForkJoinPool(ForkJoinPool.commonPool());
     }
 
-    static Scheduler inline() {
+    static Scheduler parasitic() {
         return new SchedulerAdapter(Runnable::run, Throwable::printStackTrace);
     }
 
