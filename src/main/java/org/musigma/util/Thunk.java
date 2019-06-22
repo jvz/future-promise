@@ -5,6 +5,7 @@ import org.musigma.util.function.UncheckedPredicate;
 import org.musigma.util.function.UncheckedSupplier;
 
 import java.util.NoSuchElementException;
+import java.util.function.Supplier;
 
 public final class Thunk<T> implements UncheckedSupplier<T> {
 
@@ -20,6 +21,14 @@ public final class Thunk<T> implements UncheckedSupplier<T> {
     private Thunk(final T value) {
         this.error = null;
         this.value = value;
+    }
+
+    public static <T> Thunk<T> fromSupplier(final Supplier<T> supplier) {
+        try {
+            return value(supplier.get());
+        } catch (final Throwable throwable) {
+            return error(throwable);
+        }
     }
 
     public static <T> Thunk<T> from(final UncheckedSupplier<T> supplier) {
