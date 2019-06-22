@@ -2,9 +2,9 @@ package org.musigma.util.concurrent;
 
 import org.musigma.util.Exceptions;
 import org.musigma.util.Thunk;
-import org.musigma.util.function.Consumer;
-import org.musigma.util.function.Function;
-import org.musigma.util.function.Predicate;
+import org.musigma.util.function.UncheckedConsumer;
+import org.musigma.util.function.UncheckedFunction;
+import org.musigma.util.function.UncheckedPredicate;
 
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
@@ -212,13 +212,13 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
     }
 
     @Override
-    public void onComplete(final Consumer<Thunk<T>> consumer, final Scheduler scheduler) {
+    public void onComplete(final UncheckedConsumer<Thunk<T>> consumer, final Scheduler scheduler) {
         dispatchOrAddCallbacks(ref.get(), new Transformation<T, Void>(consumer, scheduler, null, Transform.onComplete));
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    public <U> Future<U> map(final Function<? super T, ? extends U> function, final Scheduler scheduler) {
+    public <U> Future<U> map(final UncheckedFunction<? super T, ? extends U> function, final Scheduler scheduler) {
         final Object state = ref.get();
         if (state instanceof Thunk && ((Thunk<?>) state).isError()) {
             return (Future<U>) this;
@@ -229,7 +229,7 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
 
     @SuppressWarnings("unchecked")
     @Override
-    public <U> Future<U> flatMap(final Function<? super T, ? extends Future<U>> function, final Scheduler scheduler) {
+    public <U> Future<U> flatMap(final UncheckedFunction<? super T, ? extends Future<U>> function, final Scheduler scheduler) {
         final Object state = ref.get();
         if (state instanceof Thunk && ((Thunk<?>) state).isError()) {
             return (Future<U>) this;
@@ -239,7 +239,7 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
     }
 
     @Override
-    public Future<T> filter(final Predicate<? super T> predicate, final Scheduler scheduler) {
+    public Future<T> filter(final UncheckedPredicate<? super T> predicate, final Scheduler scheduler) {
         final Object state = ref.get();
         if (state instanceof Thunk && ((Thunk<?>) state).isError()) {
             return this;
@@ -249,7 +249,7 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
     }
 
     @Override
-    public <U> Future<U> transform(final Function<Thunk<T>, Thunk<U>> function, final Scheduler scheduler) {
+    public <U> Future<U> transform(final UncheckedFunction<Thunk<T>, Thunk<U>> function, final Scheduler scheduler) {
         return dispatchOrAddCallbacks(ref.get(), new Transformation<>(function, scheduler, null, Transform.transform));
     }
 }

@@ -1,12 +1,12 @@
 package org.musigma.util;
 
-import org.musigma.util.function.Function;
-import org.musigma.util.function.Predicate;
-import org.musigma.util.function.Supplier;
+import org.musigma.util.function.UncheckedFunction;
+import org.musigma.util.function.UncheckedPredicate;
+import org.musigma.util.function.UncheckedSupplier;
 
 import java.util.NoSuchElementException;
 
-public final class Thunk<T> implements Supplier<T> {
+public final class Thunk<T> implements UncheckedSupplier<T> {
 
     private final Throwable error;
     private final T value;
@@ -22,7 +22,7 @@ public final class Thunk<T> implements Supplier<T> {
         this.value = value;
     }
 
-    public static <T> Thunk<T> from(final Supplier<T> supplier) {
+    public static <T> Thunk<T> from(final UncheckedSupplier<T> supplier) {
         try {
             return value(supplier.get());
         } catch (final Throwable throwable) {
@@ -67,14 +67,14 @@ public final class Thunk<T> implements Supplier<T> {
         }
     }
 
-    public <U> Thunk<U> map(final Function<? super T, ? extends U> function) {
+    public <U> Thunk<U> map(final UncheckedFunction<? super T, ? extends U> function) {
         if (isError()) {
             return recast();
         }
         return from(() -> function.apply(value));
     }
 
-    public <U> Thunk<U> flatMap(final Function<? super T, Thunk<U>> function) {
+    public <U> Thunk<U> flatMap(final UncheckedFunction<? super T, Thunk<U>> function) {
         if (isError()) {
             return recast();
         }
@@ -85,7 +85,7 @@ public final class Thunk<T> implements Supplier<T> {
         }
     }
 
-    public Thunk<T> filter(final Predicate<? super T> predicate) {
+    public Thunk<T> filter(final UncheckedPredicate<? super T> predicate) {
         if (isError()) {
             return this;
         }
@@ -96,7 +96,7 @@ public final class Thunk<T> implements Supplier<T> {
         }
     }
 
-    public <U> Thunk<U> transform(final Function<? super T, Thunk<U>> ifSuccess, final Function<Throwable, Thunk<U>> ifError) {
+    public <U> Thunk<U> transform(final UncheckedFunction<? super T, Thunk<U>> ifSuccess, final UncheckedFunction<Throwable, Thunk<U>> ifError) {
         try {
             return isSuccess() ? ifSuccess.apply(value) : ifError.apply(error);
         } catch (final Throwable throwable) {

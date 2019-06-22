@@ -1,11 +1,11 @@
 package org.musigma.util.concurrent;
 
 import org.musigma.util.Thunk;
-import org.musigma.util.function.Consumer;
+import org.musigma.util.function.UncheckedConsumer;
 
 import java.util.concurrent.locks.AbstractQueuedSynchronizer;
 
-class CompletionLatch<T> extends AbstractQueuedSynchronizer implements Consumer<Thunk<T>> {
+class CompletionLatch<T> extends AbstractQueuedSynchronizer implements UncheckedConsumer<Thunk<T>> {
     // avoid using volatile by using acquire/release
     private Thunk<T> result;
 

@@ -1,7 +1,7 @@
 package org.musigma.util.function;
 
 @FunctionalInterface
-public interface Supplier<T> extends Function<Void, T> {
+public interface UncheckedSupplier<T> extends UncheckedFunction<Void, T> {
     T get() throws Throwable;
 
     @Override

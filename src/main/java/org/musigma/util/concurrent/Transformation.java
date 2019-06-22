@@ -2,8 +2,8 @@ package org.musigma.util.concurrent;
 
 import org.musigma.util.Exceptions;
 import org.musigma.util.Thunk;
-import org.musigma.util.function.Function;
-import org.musigma.util.function.Predicate;
+import org.musigma.util.function.UncheckedFunction;
+import org.musigma.util.function.UncheckedPredicate;
 
 import java.util.Objects;
 
@@ -11,15 +11,15 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
 
     static Transformation<?, ?> NOOP = new Transformation<>(null, Scheduler.parasitic(), null, Transform.noop);
 
-    private Function<Object, Object> function;
+    private UncheckedFunction<Object, Object> function;
     private Scheduler scheduler;
     private Thunk<F> argument;
     private Transform transform;
 
     @SuppressWarnings("unchecked")
-    Transformation(final Function<?, ?> function, final Scheduler scheduler, final Thunk<F> argument, final Transform transform) {
+    Transformation(final UncheckedFunction<?, ?> function, final Scheduler scheduler, final Thunk<F> argument, final Transform transform) {
         super(NOOP);
-        this.function = (Function<Object, Object>) function;
+        this.function = (UncheckedFunction<Object, Object>) function;
         this.scheduler = scheduler;
         this.argument = argument;
         this.transform = transform;
@@ -65,7 +65,7 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
     public void run() {
         final Thunk<F> value = this.argument;
         this.argument = null;
-        final Function<Object, Object> function = this.function;
+        final UncheckedFunction<Object, Object> function = this.function;
         this.function = null;
         final Scheduler scheduler = this.scheduler;
         this.scheduler = null;
@@ -76,7 +76,7 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
                     break;
 
                 case map: {
-                    final Function<? super F, ? extends T> f = (Function<? super F, ? extends T>) function;
+                    final UncheckedFunction<? super F, ? extends T> f = (UncheckedFunction<? super F, ? extends T>) function;
                     resolvedResult = resolve(value.map(f));
 //                    resolvedResult = value.isSuccess() ? Thunk.value(function.apply(value.get())) : value;
                     break;
@@ -107,7 +107,7 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
                 }
 
                 case filter: {
-                    final Predicate<F> predicate = (Predicate) function;
+                    final UncheckedPredicate<F> predicate = (UncheckedPredicate) function;
                     resolvedResult = resolve(value.filter(predicate)).recast();
 //                    resolvedResult = value.isError() || predicate.test(value.get()) ? value.recast() : Thunk.error(new NoSuchElementException("filter predicate failed"));
                     break;

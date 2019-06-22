@@ -1,7 +1,7 @@
 package org.musigma.util.function;
 
 @FunctionalInterface
-public interface Predicate<T> extends Function<T, Boolean> {
+public interface UncheckedPredicate<T> extends UncheckedFunction<T, Boolean> {
     boolean test(final T value) throws Throwable;
 
     @Override
