@@ -1,9 +1,8 @@
 package org.musigma.util.concurrent;
 
-import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
 
-public interface Scheduler extends Executor {
+public interface Scheduler {
 
     static Scheduler common() {
         return SchedulerAdapter.fromForkJoinPool(ForkJoinPool.commonPool());
@@ -13,5 +12,8 @@ public interface Scheduler extends Executor {
         return new SchedulerAdapter(Runnable::run, Throwable::printStackTrace);
     }
 
-    void handleException(final Throwable t);
+    void execute(final Runnable runnable);
+
+    void reportError(final Throwable t);
+
 }

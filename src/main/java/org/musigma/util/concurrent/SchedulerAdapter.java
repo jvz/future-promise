@@ -4,7 +4,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
 
-class SchedulerAdapter implements Scheduler {
+class SchedulerAdapter implements SchedulerExecutor {
 
     private final Executor executor;
     private final Consumer<Throwable> exceptionHandler;
@@ -24,7 +24,7 @@ class SchedulerAdapter implements Scheduler {
     }
 
     @Override
-    public void handleException(final Throwable t) {
+    public void reportError(final Throwable t) {
         exceptionHandler.accept(t);
     }
 }

@@ -54,7 +54,7 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
             Thread.currentThread().interrupt();
         }
         if (transform == Transform.onComplete || !completed) {
-            scheduler.handleException(t);
+            scheduler.reportError(t);
         } else {
             Exceptions.rethrow(t);
         }
