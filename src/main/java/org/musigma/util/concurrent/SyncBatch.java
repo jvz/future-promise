@@ -2,9 +2,9 @@ package org.musigma.util.concurrent;
 
 import org.musigma.util.Exceptions;
 
-class SyncBatch extends AbstractBatch implements Runnable {
+class SyncBatch extends AbstractBatch<SyncBatchingScheduler> implements Runnable {
 
-    SyncBatch(final BatchingScheduler scheduler, final Runnable runnable) {
+    SyncBatch(final SyncBatchingScheduler scheduler, final Runnable runnable) {
         super(scheduler, runnable);
     }
 

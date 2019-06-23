@@ -4,16 +4,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-abstract class AbstractBatch {
-    final BatchingScheduler scheduler;
+abstract class AbstractBatch<SchedulerT extends BatchingScheduler> {
+    final SchedulerT scheduler;
     // TODO: this can be optimized by unboxing the first Runnable
     final List<Runnable> runnables;
 
-    AbstractBatch(final BatchingScheduler scheduler, final Runnable runnable) {
+    AbstractBatch(final SchedulerT scheduler, final Runnable runnable) {
         this(scheduler, Collections.singletonList(runnable));
     }
 
-    AbstractBatch(final BatchingScheduler scheduler, final List<Runnable> runnables) {
+    AbstractBatch(final SchedulerT scheduler, final List<Runnable> runnables) {
         this.scheduler = scheduler;
         this.runnables = new ArrayList<>(runnables);
     }

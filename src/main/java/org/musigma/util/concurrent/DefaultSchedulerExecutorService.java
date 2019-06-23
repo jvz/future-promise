@@ -4,7 +4,7 @@ import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
 
-class DefaultSchedulerExecutorService extends ForkJoinPool implements SchedulerExecutorService, BatchingScheduler {
+class DefaultSchedulerExecutorService extends ForkJoinPool implements SchedulerExecutorService, AsyncBatchingScheduler {
 
     private static String getString(final String propertyName, final String defaultValue) {
         try {
@@ -34,8 +34,25 @@ class DefaultSchedulerExecutorService extends ForkJoinPool implements SchedulerE
         return new DefaultSchedulerExecutorService(parallelism, threadFactory, uncaughtExceptionHandler);
     }
 
+    private final ThreadLocal<AsyncBatch> asyncContext = new ThreadLocal<>();
+
     private DefaultSchedulerExecutorService(final int parallelism, final ForkJoinWorkerThreadFactory factory, final UncaughtExceptionHandler handler) {
         super(parallelism, factory, handler, true);
+    }
+
+    @Override
+    public AsyncBatch getCurrentBatch() {
+        return asyncContext.get();
+    }
+
+    @Override
+    public void setCurrentBatch(final AsyncBatch batch) {
+        asyncContext.set(batch);
+    }
+
+    @Override
+    public void clearCurrentBatch() {
+        asyncContext.remove();
     }
 
     @Override
