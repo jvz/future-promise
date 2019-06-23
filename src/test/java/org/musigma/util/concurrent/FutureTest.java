@@ -3,16 +3,13 @@ package org.musigma.util.concurrent;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.musigma.util.Exceptions;
 import org.musigma.util.Thunk;
 import org.musigma.util.function.UncheckedConsumer;
 import org.musigma.util.function.UncheckedFunction;
 
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicReference;
 
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.*;
 
 public class FutureTest {
@@ -124,51 +121,6 @@ public class FutureTest {
         assertSame(never, schedulerNotUsed(s -> never.map(UncheckedFunction.identity(), s)));
         assertSame(never, schedulerNotUsed(s -> never.flatMap(ignored -> failAsync("flatMap should not be called"))));
         assertSame(never, schedulerNotUsed(s -> never.filter(ignored -> fail("should not execute filter"))));
-    }
-
-    @Test
-    public void testParasiticSchedulerRunsOnCallingThread() {
-        Thread t = Thread.currentThread();
-        AtomicReference<Thread> tRef = new AtomicReference<>();
-        Scheduler.parasitic().execute(() -> tRef.set(Thread.currentThread()));
-        assertSame(t, tRef.get());
-    }
-
-    @Test
-    public void testParasiticSchedulerDoesNotRethrowNonFatalExceptions() {
-        Scheduler.parasitic().execute(() -> {
-            throw new RuntimeException("do not rethrow");
-        });
-    }
-
-    @Test
-    public void testParasiticSchedulerRethrowsFatalExceptions() {
-        OutOfMemoryError error = new OutOfMemoryError("test");
-        expectedException.expect(equalTo(error));
-        Scheduler.parasitic().execute(() -> {
-            throw error;
-        });
-    }
-
-    @Test
-    public void testParasiticSchedulerContinuesAfterNonFatalException() {
-        AtomicReference<String> value = new AtomicReference<>();
-        Scheduler.parasitic().execute(() -> {
-            throw new RuntimeException("do not rethrow");
-        });
-        Scheduler.parasitic().execute(() -> value.set("hello world"));
-        assertEquals("hello world", value.get());
-    }
-
-    @Test
-    public void testParasiticSchedulerDoesNotOverflowStack() {
-        recurse(100000);
-    }
-
-    private void recurse(final int i) {
-        if (i > 0) {
-            Scheduler.parasitic().execute(() -> recurse(i - 1));
-        }
     }
 
     @Test
