@@ -41,7 +41,7 @@ public class FutureTest {
         return Future.failed(new AssertionError(msg));
     }
 
-    <T> T schedulerNotUsed(final UncheckedFunction<Scheduler, T> function) throws Throwable {
+    <T> T schedulerNotUsed(final UncheckedFunction<Scheduler, T> function) throws Exception {
         final Promise<Runnable> p = Promise.newPromise();
         final Scheduler unusedScheduler = new Scheduler() {
             @Override
@@ -59,7 +59,7 @@ public class FutureTest {
         return t;
     }
 
-    void schedulerNotUsedV(final UncheckedConsumer<Scheduler> consumer) throws Throwable {
+    void schedulerNotUsedV(final UncheckedConsumer<Scheduler> consumer) throws Exception {
         schedulerNotUsed(consumer);
     }
 
@@ -113,7 +113,7 @@ public class FutureTest {
     }
 
     @Test
-    public void testNever() throws Throwable {
+    public void testNever() throws Exception {
         assertNotNull(Future.never());
         Future<Void> never = Future.never();
         assertSame(never, Future.never());

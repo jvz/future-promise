@@ -34,7 +34,7 @@ class AsyncBatch extends AbstractBatch implements Runnable, BlockContext, Unchec
     }
 
     @Override
-    public <T> T blockOn(final Thunk<T> thunk) throws Throwable {
+    public <T> T blockOn(final Thunk<T> thunk) throws Exception {
         if (isBlocking()) {
             executor.submitForExecution(cloneAndClear());
         }
@@ -42,7 +42,7 @@ class AsyncBatch extends AbstractBatch implements Runnable, BlockContext, Unchec
     }
 
     @Override
-    public Throwable apply(final BlockContext value) throws Throwable {
+    public Throwable apply(final BlockContext value) throws Exception {
         try {
             parentBlockContext = value;
             runN(BatchingExecutors.RUN_LIMIT);

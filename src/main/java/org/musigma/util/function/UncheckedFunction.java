@@ -6,5 +6,5 @@ public interface UncheckedFunction<T, R> {
         return t -> t;
     }
 
-    R apply(final T value) throws Throwable;
+    R apply(final T value) throws Exception;
 }

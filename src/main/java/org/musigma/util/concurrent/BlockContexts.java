@@ -25,7 +25,7 @@ public class BlockContexts {
         return prefer(LOCAL_CONTEXT.get());
     }
 
-    public static <T> T withBlockContext(final BlockContext context, final Thunk<T> thunk) throws Throwable {
+    public static <T> T withBlockContext(final BlockContext context, final Thunk<T> thunk) throws Exception {
         final BlockContext previous = LOCAL_CONTEXT.get();
         if (previous == context) {
             return thunk.get();
@@ -38,7 +38,7 @@ public class BlockContexts {
         }
     }
 
-    public static <T> T usingBlockContext(final BlockContext context, final UncheckedFunction<BlockContext, T> function) throws Throwable {
+    public static <T> T usingBlockContext(final BlockContext context, final UncheckedFunction<BlockContext, T> function) throws Exception {
         final BlockContext previous = LOCAL_CONTEXT.get();
         if (previous == context) {
             return function.apply(prefer(previous));

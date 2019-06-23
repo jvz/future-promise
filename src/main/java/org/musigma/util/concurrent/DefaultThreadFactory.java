@@ -52,7 +52,7 @@ class DefaultThreadFactory implements ThreadFactory, ForkJoinWorkerThreadFactory
         }
 
         @Override
-        public <T> T blockOn(final Thunk<T> thunk) throws Throwable {
+        public <T> T blockOn(final Thunk<T> thunk) throws Exception {
             if (Thread.currentThread() == this && !blocked && blockerPermits.tryAcquire()) {
                 try {
                     final ManagedBlockerThunk<T> blocker = new ManagedBlockerThunk<>(thunk);

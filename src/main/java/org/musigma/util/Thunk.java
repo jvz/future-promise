@@ -48,9 +48,9 @@ public final class Thunk<T> implements UncheckedSupplier<T> {
     }
 
     @Override
-    public T get() throws Throwable {
+    public T get() throws Exception {
         if (isError()) {
-            throw error;
+            Exceptions.rethrow(error);
         }
         return value;
     }
