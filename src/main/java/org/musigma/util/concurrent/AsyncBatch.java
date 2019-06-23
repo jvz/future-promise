@@ -1,10 +1,10 @@
 package org.musigma.util.concurrent;
 
 import org.musigma.util.Exceptions;
-import org.musigma.util.Thunk;
 import org.musigma.util.function.UncheckedFunction;
 
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
 class AsyncBatch extends AbstractBatch implements Runnable, BlockContext, UncheckedFunction<BlockContext, Throwable> {
@@ -34,7 +34,7 @@ class AsyncBatch extends AbstractBatch implements Runnable, BlockContext, Unchec
     }
 
     @Override
-    public <T> T blockOn(final Thunk<T> thunk) throws Exception {
+    public <T> T blockOn(final Callable<T> thunk) throws Exception {
         if (isBlocking()) {
             executor.submitForExecution(cloneAndClear());
         }

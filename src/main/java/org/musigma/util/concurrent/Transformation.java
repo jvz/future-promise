@@ -5,7 +5,9 @@ import org.musigma.util.Thunk;
 import org.musigma.util.function.UncheckedFunction;
 import org.musigma.util.function.UncheckedPredicate;
 
+import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.concurrent.Callable;
 
 class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Runnable, Batchable {
 
@@ -13,11 +15,11 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
 
     private UncheckedFunction<Object, Object> function;
     private Scheduler scheduler;
-    private Thunk<F> argument;
+    private Callable<F> argument;
     private Transform transform;
 
     @SuppressWarnings("unchecked")
-    Transformation(final UncheckedFunction<?, ?> function, final Scheduler scheduler, final Thunk<F> argument, final Transform transform) {
+    Transformation(final UncheckedFunction<?, ?> function, final Scheduler scheduler, final Callable<F> argument, final Transform transform) {
         super();
         this.function = (UncheckedFunction<Object, Object>) function;
         this.scheduler = scheduler;
@@ -25,13 +27,13 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
         this.transform = transform;
     }
 
-    private static <T> Thunk<T> resolve(final Thunk<T> value) {
+    private static <T> Callable<T> resolve(final Callable<T> value) {
         Objects.requireNonNull(value);
         // TODO: this can support the use of a ControlThrowable and similar
         return value;
     }
 
-    void submitWithValue(final Thunk<F> resolved) {
+    void submitWithValue(final Callable<F> resolved) {
         argument = resolved;
         try {
             scheduler.execute(this);
@@ -67,22 +69,21 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
     @SuppressWarnings("unchecked")
     @Override
     public void run() {
-        final Thunk<F> value = this.argument;
+        final Thunk<F> value = Thunk.from(this.argument);
         this.argument = null;
         final UncheckedFunction<Object, Object> function = this.function;
         this.function = null;
         final Scheduler scheduler = this.scheduler;
         this.scheduler = null;
         try {
-            Thunk<T> resolvedResult = null;
+            Callable<T> resolvedResult = null;
             switch (transform) {
                 case noop:
                     break;
 
                 case map: {
                     final UncheckedFunction<? super F, ? extends T> f = (UncheckedFunction<? super F, ? extends T>) function;
-                    resolvedResult = resolve(value.map(f));
-//                    resolvedResult = value.isSuccess() ? Thunk.value(function.apply(value.get())) : value;
+                    resolvedResult = value.isSuccess() ? Thunk.value(f.apply(value.call())) : value.recast();
                     break;
                 }
 
@@ -112,8 +113,7 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
 
                 case filter: {
                     final UncheckedPredicate<F> predicate = (UncheckedPredicate) function;
-                    resolvedResult = resolve(value.filter(predicate)).recast();
-//                    resolvedResult = value.isError() || predicate.test(value.get()) ? value.recast() : Thunk.error(new NoSuchElementException("filter predicate failed"));
+                    resolvedResult = value.isError() || predicate.test(value.call()) ? value.recast() : Thunk.error(new NoSuchElementException("filter predicate failed"));
                     break;
                 }
 

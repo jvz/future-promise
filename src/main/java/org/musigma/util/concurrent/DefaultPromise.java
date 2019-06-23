@@ -7,6 +7,7 @@ import org.musigma.util.function.UncheckedFunction;
 import org.musigma.util.function.UncheckedPredicate;
 
 import java.util.Optional;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -24,20 +25,20 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
         ref = new AtomicReference<>(initialValue);
     }
 
-    DefaultPromise(final Thunk<T> result) {
+    DefaultPromise(final Callable<T> result) {
         this((Object) result);
     }
 
     @Override
-    public Optional<Thunk<T>> getCurrent() {
+    public Optional<Callable<T>> getCurrent() {
         return Optional.ofNullable(getCurrentValue());
     }
 
     @SuppressWarnings("unchecked")
-    private Thunk<T> getCurrentValue() {
+    private Callable<T> getCurrentValue() {
         final Object state = ref.get();
-        if (state instanceof Thunk) {
-            return (Thunk<T>) state;
+        if (state instanceof Callable) {
+            return (Callable<T>) state;
         } else if (state instanceof Link) {
             return ((Link<T>) state).promise(this).getCurrentValue();
         } else {
@@ -80,12 +81,12 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
         }
     }
 
-    private Thunk<T> tryGet(final long timeout, final TimeUnit unit) throws InterruptedException, TimeoutException {
-        final Thunk<T> v = getCurrentValue();
+    private Callable<T> tryGet(final long timeout, final TimeUnit unit) throws InterruptedException, TimeoutException {
+        final Callable<T> v = getCurrentValue();
         if (v != null) {
             return v;
         }
-        Thunk<T> result = null;
+        Callable<T> result = null;
         if (timeout >= 0) {
             final CompletionLatch<T> latch = new CompletionLatch<>();
             onComplete(latch, Scheduler.parasitic());
@@ -108,13 +109,13 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
     }
 
     @Override
-    public boolean tryComplete(final Thunk<T> result) {
+    public boolean tryComplete(final Callable<T> result) {
         final Object state = ref.get();
         return !(state instanceof Thunk) && tryComplete(state, result);
     }
 
     @SuppressWarnings("unchecked")
-    boolean tryComplete(final Object state, final Thunk<T> resolved) {
+    boolean tryComplete(final Object state, final Callable<T> resolved) {
         Object currentState = state;
         while (true) {
             if (currentState instanceof Callbacks) {
@@ -136,7 +137,7 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
         }
     }
 
-    private void submitWithValue(final Callbacks<T> callbacks, final Thunk<T> resolved) {
+    private void submitWithValue(final Callbacks<T> callbacks, final Callable<T> resolved) {
         Callbacks<T> c = callbacks;
         while (c instanceof ManyCallbacks) {
             final ManyCallbacks<T> m = (ManyCallbacks<T>) c;
@@ -154,8 +155,8 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
             return;
         }
         final Object state = ref.get();
-        if (state instanceof Thunk) {
-            final Thunk<T> value = (Thunk<T>) state;
+        if (state instanceof Callable) {
+            final Callable<T> value = (Callable<T>) state;
             if (!target.tryComplete(target.ref.get(), value)) {
                 throw new IllegalStateException("cannot link promises");
             }
@@ -177,7 +178,7 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
     }
 
     @SuppressWarnings("unchecked")
-    void unlink(final Thunk<T> resolved) {
+    void unlink(final Callable<T> resolved) {
         final Object state = ref.get();
         if (state instanceof Link) {
             final Link<T> link = (Link<T>) state;
@@ -190,8 +191,8 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
 
     @SuppressWarnings("unchecked")
     private <C extends Callbacks<T>> C dispatchOrAddCallbacks(final Object state, final C callbacks) {
-        if (state instanceof Thunk) {
-            final Thunk<T> value = (Thunk<T>) state;
+        if (state instanceof Callable) {
+            final Callable<T> value = (Callable<T>) state;
             submitWithValue(callbacks, value);
             return callbacks;
         } else if (state instanceof Callbacks) {

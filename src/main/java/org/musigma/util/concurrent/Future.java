@@ -4,13 +4,13 @@ import org.musigma.util.Thunk;
 import org.musigma.util.function.UncheckedConsumer;
 import org.musigma.util.function.UncheckedFunction;
 import org.musigma.util.function.UncheckedPredicate;
-import org.musigma.util.function.UncheckedSupplier;
 
 import java.util.Optional;
+import java.util.concurrent.Callable;
 
 public interface Future<T> extends java.util.concurrent.Future<T> {
 
-    Future<Void> VOID = fromThunk(Thunk.value(null));
+    Future<Void> VOID = from(() -> null);
 
     static <T> Future<T> successful(final T result) {
         return Promise.successful(result).future();
@@ -20,24 +20,24 @@ public interface Future<T> extends java.util.concurrent.Future<T> {
         return Promise.<T>failed(throwable).future();
     }
 
-    static <T> Future<T> fromThunk(final Thunk<T> thunk) {
-        return Promise.fromThunk(thunk).future();
+    static <T> Future<T> from(final Callable<T> thunk) {
+        return Promise.from(thunk).future();
     }
 
-    static <T> Future<T> fromAsync(final UncheckedSupplier<T> supplier) {
-        return fromAsync(supplier, Scheduler.common());
+    static <T> Future<T> fromAsync(final Callable<T> callable) {
+        return fromAsync(callable, Scheduler.common());
     }
 
-    static <T> Future<T> fromAsync(final UncheckedSupplier<T> supplier, final Scheduler scheduler) {
-        return VOID.map(supplier, scheduler);
+    static <T> Future<T> fromAsync(final Callable<T> callable, final Scheduler scheduler) {
+        return VOID.map(ignored -> callable.call(), scheduler);
     }
 
-    static <T> Future<T> fromDelegate(final UncheckedSupplier<Future<T>> supplier) {
-        return fromDelegate(supplier, Scheduler.common());
+    static <T> Future<T> fromDelegate(final Callable<Future<T>> callable) {
+        return fromDelegate(callable, Scheduler.common());
     }
 
-    static <T> Future<T> fromDelegate(final UncheckedSupplier<Future<T>> supplier, final Scheduler scheduler) {
-        return VOID.flatMap(supplier, scheduler);
+    static <T> Future<T> fromDelegate(final Callable<Future<T>> callable, final Scheduler scheduler) {
+        return VOID.flatMap(ignored -> callable.call(), scheduler);
     }
 
     static <T> Future<T> never() {
@@ -50,7 +50,7 @@ public interface Future<T> extends java.util.concurrent.Future<T> {
 
     void onComplete(final UncheckedConsumer<Thunk<T>> consumer, final Scheduler scheduler);
 
-    Optional<Thunk<T>> getCurrent();
+    Optional<Callable<T>> getCurrent();
 
     default <U> Future<U> map(final UncheckedFunction<? super T, ? extends U> function) {
         return map(function, Scheduler.common());

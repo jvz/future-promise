@@ -1,10 +1,10 @@
 package org.musigma.util.concurrent;
 
 import org.musigma.util.Exceptions;
-import org.musigma.util.Thunk;
 
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.Objects;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinPool.ForkJoinWorkerThreadFactory;
 import java.util.concurrent.ForkJoinPool.ManagedBlocker;
@@ -52,7 +52,7 @@ class DefaultThreadFactory implements ThreadFactory, ForkJoinWorkerThreadFactory
         }
 
         @Override
-        public <T> T blockOn(final Thunk<T> thunk) throws Exception {
+        public <T> T blockOn(final Callable<T> thunk) throws Exception {
             if (Thread.currentThread() == this && !blocked && blockerPermits.tryAcquire()) {
                 try {
                     final ManagedBlockerThunk<T> blocker = new ManagedBlockerThunk<>(thunk);
@@ -70,11 +70,11 @@ class DefaultThreadFactory implements ThreadFactory, ForkJoinWorkerThreadFactory
         }
 
         private class ManagedBlockerThunk<T> implements ManagedBlocker {
-            private final Thunk<T> thunk;
+            private final Callable<T> thunk;
             private T result;
             private boolean done;
 
-            private ManagedBlockerThunk(final Thunk<T> thunk) {
+            private ManagedBlockerThunk(final Callable<T> thunk) {
                 this.thunk = thunk;
             }
 

@@ -2,30 +2,32 @@ package org.musigma.util.concurrent;
 
 import org.musigma.util.Thunk;
 
+import java.util.concurrent.Callable;
+
 public interface Promise<T> {
     static <T> Promise<T> newPromise() {
         return new DefaultPromise<>();
     }
 
-    static <T> Promise<T> fromThunk(final Thunk<T> result) {
+    static <T> Promise<T> from(final Callable<T> result) {
         return new DefaultPromise<>(result);
     }
 
     static <T> Promise<T> successful(final T result) {
-        return fromThunk(Thunk.value(result));
+        return from(Thunk.value(result));
     }
 
     static <T> Promise<T> failed(final Throwable throwable) {
-        return fromThunk(Thunk.error(throwable));
+        return from(Thunk.error(throwable));
     }
 
     Future<T> future();
 
     boolean isDone();
 
-    boolean tryComplete(final Thunk<T> result);
+    boolean tryComplete(final Callable<T> result);
 
-    default Promise<T> complete(final Thunk<T> result) {
+    default Promise<T> complete(final Callable<T> result) {
         if (tryComplete(result)) {
             return this;
         } else {

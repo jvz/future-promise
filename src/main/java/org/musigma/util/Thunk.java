@@ -23,6 +23,9 @@ public final class Thunk<T> implements Callable<T> {
     }
 
     public static <T> Thunk<T> from(final Callable<T> callable) {
+        if (callable instanceof Thunk) {
+            return (Thunk<T>) callable;
+        }
         try {
             return value(callable.call());
         } catch (final Throwable throwable) {

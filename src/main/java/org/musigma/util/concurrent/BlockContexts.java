@@ -3,9 +3,11 @@ package org.musigma.util.concurrent;
 import org.musigma.util.Thunk;
 import org.musigma.util.function.UncheckedFunction;
 
+import java.util.concurrent.Callable;
+
 public class BlockContexts {
 
-    private static final BlockContext DEFAULT = Thunk::call;
+    private static final BlockContext DEFAULT = Callable::call;
 
     private static final ThreadLocal<BlockContext> LOCAL_CONTEXT = new ThreadLocal<>();
 

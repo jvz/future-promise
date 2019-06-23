@@ -6,6 +6,7 @@ import org.musigma.util.function.UncheckedFunction;
 import org.musigma.util.function.UncheckedPredicate;
 
 import java.util.Optional;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -30,7 +31,7 @@ class Never<T> implements Future<T> {
     }
 
     @Override
-    public Optional<Thunk<T>> getCurrent() {
+    public Optional<Callable<T>> getCurrent() {
         return Optional.empty();
     }
 
