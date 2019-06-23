@@ -56,7 +56,7 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
         if (transform == Transform.onComplete || !completed) {
             scheduler.reportFailure(t);
         } else {
-            Exceptions.rethrow(t);
+            Exceptions.rethrowUnchecked(t);
         }
     }
 
@@ -88,7 +88,7 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
 
                 case flatMap: {
                     if (value.isSuccess()) {
-                        final Object f = function.apply(value.get());
+                        final Object f = function.apply(value.call());
                         if (f instanceof DefaultPromise) {
                             ((DefaultPromise<T>) f).linkRootOf(this, null);
                         } else {

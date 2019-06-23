@@ -5,7 +5,7 @@ import org.musigma.util.function.UncheckedFunction;
 
 public class BlockContexts {
 
-    private static final BlockContext DEFAULT = Thunk::get;
+    private static final BlockContext DEFAULT = Thunk::call;
 
     private static final ThreadLocal<BlockContext> LOCAL_CONTEXT = new ThreadLocal<>();
 
@@ -28,11 +28,11 @@ public class BlockContexts {
     public static <T> T withBlockContext(final BlockContext context, final Thunk<T> thunk) throws Exception {
         final BlockContext previous = LOCAL_CONTEXT.get();
         if (previous == context) {
-            return thunk.get();
+            return thunk.call();
         }
         LOCAL_CONTEXT.set(context);
         try {
-            return thunk.get();
+            return thunk.call();
         } finally {
             LOCAL_CONTEXT.set(previous);
         }

@@ -65,7 +65,7 @@ class DefaultThreadFactory implements ThreadFactory, ForkJoinWorkerThreadFactory
                 }
             } else {
                 // unmanaged blocking
-                return thunk.get();
+                return thunk.call();
             }
         }
 
@@ -82,10 +82,10 @@ class DefaultThreadFactory implements ThreadFactory, ForkJoinWorkerThreadFactory
             public boolean block() throws InterruptedException {
                 if (!done) {
                     try {
-                        result = thunk.get();
+                        result = thunk.call();
                         done = true;
                     } catch (final Throwable throwable) {
-                        Exceptions.rethrow(throwable);
+                        Exceptions.rethrowUnchecked(throwable);
                         return false;
                     }
                 }

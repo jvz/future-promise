@@ -29,7 +29,7 @@ class AsyncBatch extends AbstractBatch implements Runnable, BlockContext, Unchec
             failure = throwable;
         }
         if (failure != null) {
-            Exceptions.rethrow(failure);
+            Exceptions.rethrowUnchecked(failure);
         }
     }
 
@@ -63,9 +63,10 @@ class AsyncBatch extends AbstractBatch implements Runnable, BlockContext, Unchec
             executor.submitForExecution(this);
             return throwable;
         } catch (final Throwable t) {
-            // FIXME: this may not be an appropriate place to rethrow?
-            Exceptions.rethrowIfFatal(t);
-            ExecutionException e = new ExecutionException("non-fatal error occurred and resubmission failed", throwable);
+            if (Exceptions.isFatal(t)) {
+                return t;
+            }
+            ExecutionException e = new ExecutionException("non-fatal error occurred and resubmission failed; check suppressed exception", throwable);
             e.addSuppressed(t);
             return e;
         }

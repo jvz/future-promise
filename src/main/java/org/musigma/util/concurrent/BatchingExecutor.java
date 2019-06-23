@@ -6,6 +6,7 @@ import java.util.Objects;
 import java.util.concurrent.Executor;
 
 interface BatchingExecutor extends Executor {
+    // FIXME: refactor into method
     ThreadLocal<Object> LOCAL_TASKS = new ThreadLocal<>();
 
     void submitForExecution(final Runnable runnable);

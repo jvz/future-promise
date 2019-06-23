@@ -73,9 +73,9 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
     @Override
     public T get(final long timeout, final TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
         try {
-            return tryGet(timeout, unit).get();
-        } catch (final Throwable throwable) {
-            Exceptions.rethrow(throwable);
+            return tryGet(timeout, unit).call();
+        } catch (final Exception throwable) {
+            Exceptions.rethrowUnchecked(throwable);
             return null;
         }
     }

@@ -12,8 +12,16 @@ public final class Exceptions {
      * Rethrows the given Throwable without being a checked exception or wrapping.
      */
     @SuppressWarnings("unchecked")
-    public static <T extends Throwable> void rethrow(final Throwable t) throws T {
+    public static <T extends Throwable> void rethrowUnchecked(final Throwable t) throws T {
         throw (T) t;
+    }
+
+    public static void rethrow(final Throwable t) throws Exception {
+        if (t instanceof Exception) {
+            throw (Exception) t;
+        } else {
+            throw (Error) t;
+        }
     }
 
     /**
@@ -33,7 +41,7 @@ public final class Exceptions {
      */
     public static void rethrowIfFatal(final Throwable t) {
         if (isFatal(t)) {
-            rethrow(t);
+            rethrowUnchecked(t);
         }
     }
 }

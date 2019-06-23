@@ -2,12 +2,11 @@ package org.musigma.util;
 
 import org.musigma.util.function.UncheckedFunction;
 import org.musigma.util.function.UncheckedPredicate;
-import org.musigma.util.function.UncheckedSupplier;
 
 import java.util.NoSuchElementException;
-import java.util.function.Supplier;
+import java.util.concurrent.Callable;
 
-public final class Thunk<T> implements UncheckedSupplier<T> {
+public final class Thunk<T> implements Callable<T> {
 
     private final Throwable error;
     private final T value;
@@ -23,17 +22,9 @@ public final class Thunk<T> implements UncheckedSupplier<T> {
         this.value = value;
     }
 
-    public static <T> Thunk<T> fromSupplier(final Supplier<T> supplier) {
+    public static <T> Thunk<T> from(final Callable<T> callable) {
         try {
-            return value(supplier.get());
-        } catch (final Throwable throwable) {
-            return error(throwable);
-        }
-    }
-
-    public static <T> Thunk<T> from(final UncheckedSupplier<T> supplier) {
-        try {
-            return value(supplier.get());
+            return value(callable.call());
         } catch (final Throwable throwable) {
             return error(throwable);
         }
@@ -48,7 +39,7 @@ public final class Thunk<T> implements UncheckedSupplier<T> {
     }
 
     @Override
-    public T get() throws Exception {
+    public T call() throws Exception {
         if (isError()) {
             Exceptions.rethrow(error);
         }
