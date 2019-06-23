@@ -75,4 +75,10 @@ public interface Future<T> extends java.util.concurrent.Future<T> {
     }
 
     <U> Future<U> transform(final UncheckedFunction<Thunk<T>, Thunk<U>> function, final Scheduler scheduler);
+
+    default <U> Future<U> transformWith(final UncheckedFunction<Thunk<T>, Future<T>> function) {
+        return transformWith(function, Scheduler.common());
+    }
+
+    <U> Future<U> transformWith(final UncheckedFunction<Thunk<T>, Future<T>> function, final Scheduler scheduler);
 }

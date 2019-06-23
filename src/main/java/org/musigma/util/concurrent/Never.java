@@ -61,6 +61,11 @@ class Never<T> implements Future<T> {
     }
 
     @Override
+    public <U> Future<U> transformWith(final UncheckedFunction<Thunk<T>, Future<T>> function, final Scheduler scheduler) {
+        return recast();
+    }
+
+    @Override
     public boolean cancel(final boolean mayInterruptIfRunning) {
         return false;
     }
@@ -86,4 +91,5 @@ class Never<T> implements Future<T> {
         never.await(timeout, unit);
         throw new TimeoutException("future timed out after " + timeout + ' ' + unit);
     }
+
 }

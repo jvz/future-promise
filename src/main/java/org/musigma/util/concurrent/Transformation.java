@@ -106,6 +106,16 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
                     break;
                 }
 
+                case transformWith: {
+                    final UncheckedFunction<Thunk<F>, Future<T>> f = (UncheckedFunction) function;
+                    final Future<T> future = f.apply(value);
+                    if (future instanceof DefaultPromise) {
+                        ((DefaultPromise<T>) future).linkRootOf(this, null);
+                    } else {
+                        completeWith(future);
+                    }
+                }
+
                 case onComplete: {
                     function.apply(value);
                     break;

@@ -261,4 +261,9 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
     public <U> Future<U> transform(final UncheckedFunction<Thunk<T>, Thunk<U>> function, final Scheduler scheduler) {
         return dispatchOrAddCallbacks(ref.get(), new Transformation<>(function, scheduler, null, Transform.transform));
     }
+
+    @Override
+    public <U> Future<U> transformWith(final UncheckedFunction<Thunk<T>, Future<T>> function, final Scheduler scheduler) {
+        return dispatchOrAddCallbacks(ref.get(), new Transformation<>(function, scheduler, null, Transform.transformWith));
+    }
 }
