@@ -5,16 +5,16 @@ import java.util.Collections;
 import java.util.List;
 
 abstract class AbstractBatch {
-    final BatchingExecutor executor;
+    final BatchingScheduler scheduler;
     // TODO: this can be optimized by unboxing the first Runnable
     final List<Runnable> runnables;
 
-    AbstractBatch(final BatchingExecutor executor, final Runnable runnable) {
-        this(executor, Collections.singletonList(runnable));
+    AbstractBatch(final BatchingScheduler scheduler, final Runnable runnable) {
+        this(scheduler, Collections.singletonList(runnable));
     }
 
-    AbstractBatch(final BatchingExecutor executor, final List<Runnable> runnables) {
-        this.executor = executor;
+    AbstractBatch(final BatchingScheduler scheduler, final List<Runnable> runnables) {
+        this.scheduler = scheduler;
         this.runnables = new ArrayList<>(runnables);
     }
 

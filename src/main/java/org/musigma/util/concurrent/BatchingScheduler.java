@@ -3,15 +3,12 @@ package org.musigma.util.concurrent;
 import org.musigma.util.Exceptions;
 
 import java.util.Objects;
-import java.util.concurrent.Executor;
 
-interface BatchingExecutor extends Executor {
+interface BatchingScheduler extends Scheduler {
     // FIXME: refactor into method
     ThreadLocal<Object> LOCAL_TASKS = new ThreadLocal<>();
 
     void submitForExecution(final Runnable runnable);
-
-    void reportFailure(final Throwable throwable);
 
     default void submitAsyncBatched(final Runnable runnable) {
         Objects.requireNonNull(runnable);
@@ -30,7 +27,7 @@ interface BatchingExecutor extends Executor {
             ((SyncBatch) b).push(runnable);
         } else {
             final int i = b instanceof Integer ? (Integer) b : 0;
-            if (i < BatchingExecutors.SYNC_PRE_BATCH_DEPTH) {
+            if (i < BatchingSchedulers.SYNC_PRE_BATCH_DEPTH) {
                 LOCAL_TASKS.set(i + 1);
                 try {
                     submitForExecution(runnable);

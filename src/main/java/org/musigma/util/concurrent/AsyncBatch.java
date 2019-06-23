@@ -9,19 +9,19 @@ import java.util.concurrent.ExecutionException;
 
 class AsyncBatch extends AbstractBatch implements Runnable, BlockContext, UncheckedFunction<BlockContext, Throwable> {
 
-    private BlockContext parentBlockContext = BatchingExecutors.MISSING_PARENT_BLOCK_CONTEXT;
+    private BlockContext parentBlockContext = BatchingSchedulers.MISSING_PARENT_BLOCK_CONTEXT;
 
-    AsyncBatch(final BatchingExecutor executor, final Runnable runnable) {
-        super(executor, runnable);
+    AsyncBatch(final BatchingScheduler scheduler, final Runnable runnable) {
+        super(scheduler, runnable);
     }
 
-    AsyncBatch(final BatchingExecutor executor, final List<Runnable> runnables) {
-        super(executor, runnables);
+    AsyncBatch(final BatchingScheduler scheduler, final List<Runnable> runnables) {
+        super(scheduler, runnables);
     }
 
     @Override
     public void run() {
-        BatchingExecutor.LOCAL_TASKS.set(this); // later cleared in apply()
+        BatchingScheduler.LOCAL_TASKS.set(this); // later cleared in apply()
         Throwable failure;
         try {
             failure = resubmit(BlockContexts.usingBlockContext(this, this));
@@ -36,7 +36,7 @@ class AsyncBatch extends AbstractBatch implements Runnable, BlockContext, Unchec
     @Override
     public <T> T blockOn(final Callable<T> thunk) throws Exception {
         if (isBlocking()) {
-            executor.submitForExecution(cloneAndClear());
+            scheduler.submitForExecution(cloneAndClear());
         }
         return parentBlockContext.blockOn(thunk);
     }
@@ -45,13 +45,13 @@ class AsyncBatch extends AbstractBatch implements Runnable, BlockContext, Unchec
     public Throwable apply(final BlockContext value) throws Exception {
         try {
             parentBlockContext = value;
-            runN(BatchingExecutors.RUN_LIMIT);
+            runN(BatchingSchedulers.RUN_LIMIT);
             return null;
         } catch (final Throwable throwable) {
             return throwable;
         } finally {
-            parentBlockContext = BatchingExecutors.MISSING_PARENT_BLOCK_CONTEXT;
-            BatchingExecutor.LOCAL_TASKS.remove();
+            parentBlockContext = BatchingSchedulers.MISSING_PARENT_BLOCK_CONTEXT;
+            BatchingScheduler.LOCAL_TASKS.remove();
         }
     }
 
@@ -60,7 +60,7 @@ class AsyncBatch extends AbstractBatch implements Runnable, BlockContext, Unchec
             return throwable;
         }
         try {
-            executor.submitForExecution(this);
+            scheduler.submitForExecution(this);
             return throwable;
         } catch (final Throwable t) {
             if (Exceptions.isFatal(t)) {
@@ -73,7 +73,7 @@ class AsyncBatch extends AbstractBatch implements Runnable, BlockContext, Unchec
     }
 
     private AsyncBatch cloneAndClear() {
-        final AsyncBatch batch = new AsyncBatch(executor, runnables);
+        final AsyncBatch batch = new AsyncBatch(scheduler, runnables);
         runnables.clear();
         return batch;
     }

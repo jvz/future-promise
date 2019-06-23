@@ -4,7 +4,7 @@ import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
 
-class DefaultSchedulerExecutorService extends ForkJoinPool implements SchedulerExecutorService, BatchingExecutor {
+class DefaultSchedulerExecutorService extends ForkJoinPool implements SchedulerExecutorService, BatchingScheduler {
 
     private static String getString(final String propertyName, final String defaultValue) {
         try {

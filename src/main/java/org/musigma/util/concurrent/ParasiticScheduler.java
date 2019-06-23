@@ -1,6 +1,6 @@
 package org.musigma.util.concurrent;
 
-class ParasiticScheduler implements SchedulerExecutor, BatchingExecutor {
+class ParasiticScheduler implements SchedulerExecutor, BatchingScheduler {
 
     private static final ParasiticScheduler INSTANCE = new ParasiticScheduler();
 
