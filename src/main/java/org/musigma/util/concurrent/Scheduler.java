@@ -7,7 +7,7 @@ public interface Scheduler {
     }
 
     static Scheduler parasitic() {
-        return new ExecutorAdapter(Runnable::run, Throwable::printStackTrace);
+        return ParasiticScheduler.getInstance();
     }
 
     void execute(final Runnable runnable);

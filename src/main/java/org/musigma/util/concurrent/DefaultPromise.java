@@ -16,8 +16,16 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
 
     final AtomicReference<Object> ref;
 
-    DefaultPromise(final Object initialValue) {
+    DefaultPromise() {
+        this(Transformation.NOOP);
+    }
+
+    private DefaultPromise(final Object initialValue) {
         ref = new AtomicReference<>(initialValue);
+    }
+
+    DefaultPromise(final Thunk<T> result) {
+        this((Object) result);
     }
 
     @Override

@@ -18,7 +18,7 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
 
     @SuppressWarnings("unchecked")
     Transformation(final UncheckedFunction<?, ?> function, final Scheduler scheduler, final Thunk<F> argument, final Transform transform) {
-        super(NOOP);
+        super();
         this.function = (UncheckedFunction<Object, Object>) function;
         this.scheduler = scheduler;
         this.argument = argument;

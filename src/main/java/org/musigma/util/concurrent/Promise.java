@@ -4,7 +4,7 @@ import org.musigma.util.Thunk;
 
 public interface Promise<T> {
     static <T> Promise<T> newPromise() {
-        return new DefaultPromise<>(null);
+        return new DefaultPromise<>();
     }
 
     static <T> Promise<T> fromThunk(final Thunk<T> result) {
