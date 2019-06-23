@@ -5,6 +5,7 @@ import org.musigma.util.Exceptions;
 import java.util.Objects;
 
 interface SyncBatchingScheduler extends BatchingScheduler<SyncBatch> {
+
     int getPreBatchTaskCount();
 
     void setPreBatchTaskCount(final int count);
@@ -17,7 +18,7 @@ interface SyncBatchingScheduler extends BatchingScheduler<SyncBatch> {
         } else {
             int i = getPreBatchTaskCount();
             try {
-                if (i < BatchingSchedulers.SYNC_PRE_BATCH_DEPTH) {
+                if (i < Schedulers.SYNC_PRE_BATCH_DEPTH) {
                     setPreBatchTaskCount(i + 1);
                     submitForExecution(runnable);
                 } else {
@@ -33,4 +34,5 @@ interface SyncBatchingScheduler extends BatchingScheduler<SyncBatch> {
             }
         }
     }
+
 }

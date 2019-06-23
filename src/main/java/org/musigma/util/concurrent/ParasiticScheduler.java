@@ -2,15 +2,9 @@ package org.musigma.util.concurrent;
 
 class ParasiticScheduler implements SchedulerExecutor, SyncBatchingScheduler {
 
-    private static final ParasiticScheduler INSTANCE = new ParasiticScheduler();
-
-    static ParasiticScheduler getInstance() {
-        return INSTANCE;
-    }
-
     private final ThreadLocal<Object> syncContext = new ThreadLocal<>();
 
-    private ParasiticScheduler() {
+    ParasiticScheduler() {
     }
 
     @Override
@@ -61,4 +55,5 @@ class ParasiticScheduler implements SchedulerExecutor, SyncBatchingScheduler {
     public void reportFailure(final Throwable t) {
         t.printStackTrace();
     }
+
 }

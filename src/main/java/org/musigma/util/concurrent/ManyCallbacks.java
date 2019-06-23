@@ -1,6 +1,7 @@
 package org.musigma.util.concurrent;
 
 class ManyCallbacks<T> implements Callbacks<T> {
+
     final Transformation<T, ?> head;
     final Callbacks<T> tail;
 
@@ -8,4 +9,5 @@ class ManyCallbacks<T> implements Callbacks<T> {
         this.head = head;
         this.tail = tail;
     }
+
 }

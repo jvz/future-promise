@@ -1,6 +1,7 @@
 package org.musigma.util.concurrent;
 
 interface BatchingScheduler<BatchT extends AbstractBatch> extends Scheduler {
+
     BatchT getCurrentBatch();
 
     void setCurrentBatch(final BatchT batch);
@@ -8,4 +9,5 @@ interface BatchingScheduler<BatchT extends AbstractBatch> extends Scheduler {
     void clearCurrentBatch();
 
     void submitForExecution(final Runnable runnable);
+
 }

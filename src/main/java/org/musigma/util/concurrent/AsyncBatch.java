@@ -9,7 +9,14 @@ import java.util.concurrent.ExecutionException;
 
 class AsyncBatch extends AbstractBatch<AsyncBatchingScheduler> implements Runnable, BlockContext, UncheckedFunction<BlockContext, Throwable> {
 
-    private BlockContext parentBlockContext = BatchingSchedulers.MISSING_PARENT_BLOCK_CONTEXT;
+    private static final BlockContext MISSING_PARENT_BLOCK_CONTEXT = new BlockContext() {
+        @Override
+        public <T> T blockOn(final Callable<T> thunk) throws Exception {
+            throw new IllegalStateException("missing parent block context");
+        }
+    };
+
+    private BlockContext parentBlockContext = MISSING_PARENT_BLOCK_CONTEXT;
 
     AsyncBatch(final AsyncBatchingScheduler scheduler, final Runnable runnable) {
         super(scheduler, runnable);
@@ -45,12 +52,12 @@ class AsyncBatch extends AbstractBatch<AsyncBatchingScheduler> implements Runnab
     public Throwable apply(final BlockContext value) throws Exception {
         try {
             parentBlockContext = value;
-            runN(BatchingSchedulers.RUN_LIMIT);
+            runN(Schedulers.RUN_LIMIT);
             return null;
         } catch (final Throwable throwable) {
             return throwable;
         } finally {
-            parentBlockContext = BatchingSchedulers.MISSING_PARENT_BLOCK_CONTEXT;
+            parentBlockContext = MISSING_PARENT_BLOCK_CONTEXT;
             scheduler.clearCurrentBatch();
         }
     }

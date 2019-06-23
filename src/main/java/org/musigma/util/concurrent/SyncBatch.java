@@ -12,11 +12,12 @@ class SyncBatch extends AbstractBatch<SyncBatchingScheduler> implements Runnable
     public void run() {
         while (isBlocking()) {
             try {
-                runN(BatchingSchedulers.RUN_LIMIT);
+                runN(Schedulers.RUN_LIMIT);
             } catch (final Throwable throwable) {
                 Exceptions.rethrowIfFatal(throwable);
                 scheduler.reportFailure(throwable);
             }
         }
     }
+
 }

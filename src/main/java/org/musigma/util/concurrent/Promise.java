@@ -5,6 +5,7 @@ import org.musigma.util.Thunk;
 import java.util.concurrent.Callable;
 
 public interface Promise<T> {
+
     static <T> Promise<T> newPromise() {
         return new DefaultPromise<>();
     }
@@ -56,4 +57,5 @@ public interface Promise<T> {
     default boolean tryFailure(final Throwable throwable) {
         return tryComplete(Thunk.error(throwable));
     }
+
 }

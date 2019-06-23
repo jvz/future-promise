@@ -89,4 +89,5 @@ class ExecutorServiceAdapter implements SchedulerExecutorService {
     public void reportFailure(final Throwable t) {
         reporter.accept(t);
     }
+
 }

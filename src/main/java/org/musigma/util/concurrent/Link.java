@@ -1,10 +1,10 @@
 package org.musigma.util.concurrent;
 
-import org.musigma.util.Thunk;
-
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReference;
 
 class Link<T> {
+
     final AtomicReference<DefaultPromise<T>> ref;
 
     Link(final DefaultPromise<T> to) {
@@ -26,9 +26,10 @@ class Link<T> {
             } else if (value instanceof Link) {
                 target = ((Link<T>) value).ref.get();
             } else {
-                owner.unlink((Thunk<T>) value);
+                owner.unlink((Callable<T>) value);
                 return owner;
             }
         }
     }
+
 }

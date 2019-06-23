@@ -3,11 +3,7 @@ package org.musigma.util.concurrent;
 import org.musigma.util.Thunk;
 import org.musigma.util.function.UncheckedFunction;
 
-import java.util.concurrent.Callable;
-
 public class BlockContexts {
-
-    private static final BlockContext DEFAULT = Callable::call;
 
     private static final ThreadLocal<BlockContext> LOCAL_CONTEXT = new ThreadLocal<>();
 
@@ -16,11 +12,7 @@ public class BlockContexts {
             return candidate;
         }
         Thread thread = Thread.currentThread();
-        return thread instanceof BlockContext ? (BlockContext) thread : DEFAULT;
-    }
-
-    public static BlockContext defaultBlockContext() {
-        return DEFAULT;
+        return thread instanceof BlockContext ? (BlockContext) thread : BlockContext.DEFAULT;
     }
 
     public static BlockContext current() {

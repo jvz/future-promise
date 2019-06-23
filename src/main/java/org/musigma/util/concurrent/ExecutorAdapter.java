@@ -22,4 +22,5 @@ class ExecutorAdapter implements SchedulerExecutor {
     public void reportFailure(final Throwable t) {
         reporter.accept(t);
     }
+
 }

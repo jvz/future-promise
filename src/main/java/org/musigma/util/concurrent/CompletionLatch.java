@@ -6,6 +6,7 @@ import org.musigma.util.function.UncheckedConsumer;
 import java.util.concurrent.locks.AbstractQueuedSynchronizer;
 
 class CompletionLatch<T> extends AbstractQueuedSynchronizer implements UncheckedConsumer<Thunk<T>> {
+
     // avoid using volatile by using acquire/release
     private Thunk<T> result;
 
@@ -29,4 +30,5 @@ class CompletionLatch<T> extends AbstractQueuedSynchronizer implements Unchecked
         result = value;
         releaseShared(1);
     }
+
 }

@@ -4,9 +4,13 @@ import java.util.concurrent.Callable;
 
 @FunctionalInterface
 public interface BlockContext {
-    <T> T blockOn(final Callable<T> thunk) throws Exception;
+
+    BlockContext DEFAULT = Callable::call;
 
     static <T> T blocking(final Callable<T> thunk) throws Exception {
         return BlockContexts.current().blockOn(thunk);
     }
+
+    <T> T blockOn(final Callable<T> thunk) throws Exception;
+
 }

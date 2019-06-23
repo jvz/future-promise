@@ -3,11 +3,11 @@ package org.musigma.util.concurrent;
 public interface Scheduler {
 
     static Scheduler common() {
-        return SchedulerExecutor.fromExecutor(null, Throwable::printStackTrace);
+        return Schedulers.COMMON;
     }
 
     static Scheduler parasitic() {
-        return ParasiticScheduler.getInstance();
+        return Schedulers.PARASITIC;
     }
 
     void execute(final Runnable runnable);
