@@ -123,18 +123,4 @@ public class FutureTest {
         assertSame(never, schedulerNotUsed(s -> never.filter(ignored -> fail("should not execute filter"))));
     }
 
-    @Test
-    public void testDefaultSchedulerReportsUncaughtExceptions() throws ExecutionException, InterruptedException {
-        Promise<Throwable> p = Promise.newPromise();
-        SchedulerExecutorService ses = SchedulerExecutorService.fromExecutorService(null, p::trySuccess);
-        RuntimeException e = new RuntimeException();
-        try {
-            ses.execute(() -> {
-                throw e;
-            });
-            assertSame(e, p.future().get());
-        } finally {
-            ses.shutdown();
-        }
-    }
 }
