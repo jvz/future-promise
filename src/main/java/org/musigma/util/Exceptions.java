@@ -1,6 +1,10 @@
 package org.musigma.util;
 
-public class Exceptions {
+public final class Exceptions {
+
+    private Exceptions() {
+    }
+
     @SuppressWarnings("unchecked")
     public static <T extends Throwable> void rethrow(final Throwable t) throws T {
         throw (T) t;

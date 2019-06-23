@@ -7,7 +7,7 @@ import org.musigma.util.function.UncheckedPredicate;
 
 import java.util.Objects;
 
-class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Runnable {
+class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Runnable, Batchable {
 
     static Transformation<?, ?> NOOP = new Transformation<>(null, Scheduler.parasitic(), null, Transform.noop);
 
@@ -54,10 +54,14 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
             Thread.currentThread().interrupt();
         }
         if (transform == Transform.onComplete || !completed) {
-            scheduler.reportError(t);
+            scheduler.reportFailure(t);
         } else {
             Exceptions.rethrow(t);
         }
+    }
+
+    boolean benefitsFromBatching() {
+        return transform != Transform.onComplete;
     }
 
     @SuppressWarnings("unchecked")
