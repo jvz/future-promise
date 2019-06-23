@@ -4,10 +4,13 @@ import org.musigma.util.Thunk;
 import org.musigma.util.function.UncheckedConsumer;
 import org.musigma.util.function.UncheckedFunction;
 import org.musigma.util.function.UncheckedPredicate;
+import org.musigma.util.function.UncheckedSupplier;
 
 import java.util.Optional;
 
 public interface Future<T> extends java.util.concurrent.Future<T> {
+
+    Future<Void> VOID = fromThunk(Thunk.value(null));
 
     static <T> Future<T> successful(final T result) {
         return Promise.successful(result).future();
@@ -15,6 +18,30 @@ public interface Future<T> extends java.util.concurrent.Future<T> {
 
     static <T> Future<T> failed(final Throwable throwable) {
         return Promise.<T>failed(throwable).future();
+    }
+
+    static <T> Future<T> fromThunk(final Thunk<T> thunk) {
+        return Promise.fromThunk(thunk).future();
+    }
+
+    static <T> Future<T> fromAsync(final UncheckedSupplier<T> supplier) {
+        return fromAsync(supplier, Scheduler.common());
+    }
+
+    static <T> Future<T> fromAsync(final UncheckedSupplier<T> supplier, final Scheduler scheduler) {
+        return VOID.map(supplier, scheduler);
+    }
+
+    static <T> Future<T> fromDelegate(final UncheckedSupplier<Future<T>> supplier) {
+        return fromDelegate(supplier, Scheduler.common());
+    }
+
+    static <T> Future<T> fromDelegate(final UncheckedSupplier<Future<T>> supplier, final Scheduler scheduler) {
+        return VOID.flatMap(supplier, scheduler);
+    }
+
+    static <T> Future<T> never() {
+        return Never.getInstance();
     }
 
     default void onComplete(final UncheckedConsumer<Thunk<T>> consumer) {
