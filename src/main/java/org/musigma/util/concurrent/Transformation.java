@@ -33,7 +33,8 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
         return value;
     }
 
-    void submitWithValue(final Callable<F> resolved) {
+    @Override
+    public void submitWithValue(final Callable<F> resolved) {
         argument = resolved;
         try {
             scheduler.execute(this);
@@ -138,4 +139,8 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
         }
     }
 
+    @Override
+    public Callbacks<F> concat(final Callbacks<F> next) {
+        return new ManyCallbacks<>(this, next);
+    }
 }

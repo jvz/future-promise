@@ -122,7 +122,7 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
                 final Callbacks<T> callbacks = (Callbacks<T>) currentState;
                 if (ref.compareAndSet(callbacks, resolved)) {
                     if (callbacks != Transformation.NOOP) {
-                        submitWithValue(callbacks, resolved);
+                        callbacks.submitWithValue(resolved);
                     }
                     return true;
                 } else {
@@ -134,18 +134,6 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
             } else {
                 return false;
             }
-        }
-    }
-
-    private void submitWithValue(final Callbacks<T> callbacks, final Callable<T> resolved) {
-        Callbacks<T> c = callbacks;
-        while (c instanceof ManyCallbacks) {
-            final ManyCallbacks<T> m = (ManyCallbacks<T>) c;
-            m.head.submitWithValue(resolved);
-            c = m.tail;
-        }
-        if (callbacks instanceof Transformation) {
-            ((Transformation<T, ?>) callbacks).submitWithValue(resolved);
         }
     }
 
@@ -190,14 +178,13 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
     }
 
     @SuppressWarnings("unchecked")
-    private <C extends Callbacks<T>> C dispatchOrAddCallbacks(final Object state, final C callbacks) {
+    private <C extends Callbacks> C dispatchOrAddCallbacks(final Object state, final C callbacks) {
         if (state instanceof Callable) {
-            final Callable<T> value = (Callable<T>) state;
-            submitWithValue(callbacks, value);
+            callbacks.submitWithValue((Callable<T>) state);
             return callbacks;
         } else if (state instanceof Callbacks) {
             final Callbacks<T> value = (Callbacks<T>) state;
-            if (ref.compareAndSet(value, value == Transformation.NOOP ? callbacks : concatCallbacks(callbacks, value))) {
+            if (ref.compareAndSet(value, value == Transformation.NOOP ? callbacks : callbacks.concat(value))) {
                 return callbacks;
             } else {
                 // FIXME: unroll
@@ -206,17 +193,6 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
         } else {
             final DefaultPromise<T> promise = ((Link<T>) state).promise(this);
             return promise.dispatchOrAddCallbacks(promise.ref.get(), callbacks);
-        }
-    }
-
-    private Callbacks<T> concatCallbacks(final Callbacks<T> left, final Callbacks<T> right) {
-        if (left instanceof Transformation) {
-            final Transformation<T, ?> transformation = (Transformation<T, ?>) left;
-            return new ManyCallbacks<>(transformation, right);
-        } else {
-            final ManyCallbacks<T> m = (ManyCallbacks<T>) left;
-            // FIXME: unroll
-            return concatCallbacks(m.tail, new ManyCallbacks<>(m.head, right));
         }
     }
 
