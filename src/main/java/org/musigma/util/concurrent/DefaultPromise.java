@@ -15,6 +15,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
 class DefaultPromise<T> implements Promise<T>, Future<T> {
 
+    // can be:
+    // Callable<T> or Thunk<T>
+    // Callbacks<T>: Transformation<T, U> or ManyCallbacks<T>
+    // Link<T>
     final AtomicReference<Object> ref;
 
     DefaultPromise() {
@@ -142,26 +146,27 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
         if (target == this) {
             return;
         }
-        final Object state = ref.get();
-        if (state instanceof Callable) {
-            final Callable<T> value = (Callable<T>) state;
-            if (!target.tryComplete(target.ref.get(), value)) {
-                throw new IllegalStateException("cannot link promises");
-            }
-        } else if (state instanceof Callbacks) {
-            final Callbacks<T> callbacks = (Callbacks<T>) state;
-            final Link<T> l = link != null ? link : new Link<>(target);
-            final DefaultPromise<T> promise = l.promise(this);
-            if (promise != this && ref.compareAndSet(callbacks, l)) {
-                if (callbacks != Transformation.NOOP) {
-                    promise.dispatchOrAddCallbacks(promise.ref.get(), callbacks);
+        for (Object state = ref.get(); ; state = ref.get()) {
+            if (state instanceof Callable) {
+                final Callable<T> value = (Callable<T>) state;
+                if (!target.tryComplete(target.ref.get(), value)) {
+                    throw new IllegalStateException("cannot link promises");
                 }
+                break;
+            } else if (state instanceof Callbacks) {
+                final Callbacks<T> callbacks = (Callbacks<T>) state;
+                final Link<T> l = link != null ? link : new Link<>(target);
+                final DefaultPromise<T> promise = l.promise(this);
+                if (promise != this && ref.compareAndSet(callbacks, l)) {
+                    if (callbacks != Transformation.NOOP) {
+                        promise.dispatchOrAddCallbacks(callbacks);
+                    }
+                    break;
+                } // else retry
             } else {
-                // FIXME: unroll
-                linkRootOf(promise, l);
+                ((Link<T>) state).promise(this).linkRootOf(target, link);
+                break;
             }
-        } else {
-            ((Link<T>) state).promise(this).linkRootOf(target, link);
         }
     }
 
@@ -178,27 +183,26 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
     }
 
     @SuppressWarnings("unchecked")
-    private <C extends Callbacks> C dispatchOrAddCallbacks(final Object state, final C callbacks) {
-        if (state instanceof Callable) {
-            callbacks.submitWithValue((Callable<T>) state);
-            return callbacks;
-        } else if (state instanceof Callbacks) {
-            final Callbacks<T> value = (Callbacks<T>) state;
-            if (ref.compareAndSet(value, value == Transformation.NOOP ? callbacks : callbacks.concat(value))) {
+    private <C extends Callbacks<T>> C dispatchOrAddCallbacks(final C callbacks) {
+        for (Object state = ref.get(); ; state = ref.get()) {
+            if (state instanceof Callable) {
+                callbacks.submitWithValue((Callable<T>) state);
                 return callbacks;
+            } else if (state instanceof Callbacks) {
+                final Callbacks<T> value = (Callbacks<T>) state;
+                if (ref.compareAndSet(value, value == Transformation.NOOP ? callbacks : callbacks.concat(value))) {
+                    return callbacks;
+                } // else retry
             } else {
-                // FIXME: unroll
-                return dispatchOrAddCallbacks(ref.get(), callbacks);
+                final DefaultPromise<T> promise = ((Link<T>) state).promise(this);
+                return promise.dispatchOrAddCallbacks(callbacks);
             }
-        } else {
-            final DefaultPromise<T> promise = ((Link<T>) state).promise(this);
-            return promise.dispatchOrAddCallbacks(promise.ref.get(), callbacks);
         }
     }
 
     @Override
     public void onComplete(final UncheckedConsumer<Thunk<T>> consumer, final Scheduler scheduler) {
-        dispatchOrAddCallbacks(ref.get(), new Transformation<T, Void>(consumer, scheduler, null, Transform.onComplete));
+        dispatchOrAddCallbacks(new Transformation<T, Void>(consumer, scheduler, null, Transform.onComplete));
     }
 
     @SuppressWarnings("unchecked")
@@ -206,9 +210,10 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
     public <U> Future<U> map(final UncheckedFunction<? super T, ? extends U> function, final Scheduler scheduler) {
         final Object state = ref.get();
         if (state instanceof Thunk && ((Thunk<?>) state).isError()) {
+            // fail fast
             return (Future<U>) this;
         } else {
-            return dispatchOrAddCallbacks(state, new Transformation<>(function, scheduler, null, Transform.map));
+            return dispatchOrAddCallbacks(new Transformation<>(function, scheduler, null, Transform.map));
         }
     }
 
@@ -217,9 +222,10 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
     public <U> Future<U> flatMap(final UncheckedFunction<? super T, ? extends Future<U>> function, final Scheduler scheduler) {
         final Object state = ref.get();
         if (state instanceof Thunk && ((Thunk<?>) state).isError()) {
+            // fail fast
             return (Future<U>) this;
         } else {
-            return dispatchOrAddCallbacks(state, new Transformation<>(function, scheduler, null, Transform.flatMap));
+            return dispatchOrAddCallbacks(new Transformation<>(function, scheduler, null, Transform.flatMap));
         }
     }
 
@@ -227,19 +233,20 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
     public Future<T> filter(final UncheckedPredicate<? super T> predicate, final Scheduler scheduler) {
         final Object state = ref.get();
         if (state instanceof Thunk && ((Thunk<?>) state).isError()) {
+            // fail fast
             return this;
         } else {
-            return dispatchOrAddCallbacks(state, new Transformation<>(predicate, scheduler, null, Transform.filter));
+            return dispatchOrAddCallbacks(new Transformation<>(predicate, scheduler, null, Transform.filter));
         }
     }
 
     @Override
     public <U> Future<U> transform(final UncheckedFunction<Thunk<T>, Thunk<U>> function, final Scheduler scheduler) {
-        return dispatchOrAddCallbacks(ref.get(), new Transformation<>(function, scheduler, null, Transform.transform));
+        return dispatchOrAddCallbacks(new Transformation<>(function, scheduler, null, Transform.transform));
     }
 
     @Override
     public <U> Future<U> transformWith(final UncheckedFunction<Thunk<T>, Future<T>> function, final Scheduler scheduler) {
-        return dispatchOrAddCallbacks(ref.get(), new Transformation<>(function, scheduler, null, Transform.transformWith));
+        return dispatchOrAddCallbacks(new Transformation<>(function, scheduler, null, Transform.transformWith));
     }
 }
