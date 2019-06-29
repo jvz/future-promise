@@ -62,7 +62,8 @@ class DefaultSchedulerExecutorService extends ForkJoinPool implements SchedulerE
 
     @Override
     public void execute(final Runnable task) {
-        if ((!(task instanceof Transformation) || ((Transformation<?, ?>) task).benefitsFromBatching()) && task instanceof Batchable) {
+        if ((!(task instanceof Transformation) || ((Transformation<?, ?>) task).benefitsFromBatching())
+                && task.getClass().isAnnotationPresent(Batchable.class)) {
             submitAsyncBatched(task);
         } else {
             submitForExecution(task);

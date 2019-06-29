@@ -9,7 +9,8 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 
-class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Runnable, Batchable {
+@Batchable
+class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Runnable {
 
     static Transformation<?, ?> NOOP = new Transformation<>(null, Scheduler.parasitic(), null, Transform.noop);
 
