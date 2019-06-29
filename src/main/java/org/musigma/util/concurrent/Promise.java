@@ -11,7 +11,7 @@ public interface Promise<T> {
     }
 
     static <T> Promise<T> from(final Callable<T> result) {
-        return new DefaultPromise<>(Thunk.from(result));
+        return new DefaultPromise<>(result);
     }
 
     static <T> Promise<T> successful(final T result) {
