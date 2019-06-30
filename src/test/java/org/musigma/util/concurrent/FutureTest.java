@@ -9,6 +9,7 @@ import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.musigma.util.test.Assertions.assertThrowsWrapped;
 
 class FutureTest {
 
@@ -66,8 +67,8 @@ class FutureTest {
 
     @Test
     void testFailure() {
-        Future<Object> failed = Future.failed(new IllegalStateException());
-        assertThrows(IllegalStateException.class, failed::get);
+        Future<Object> failed = Future.failed(new IllegalStateException("failure"));
+        assertThrowsWrapped(IllegalStateException.class, failed::get, "failure");
     }
 
     @Test
@@ -85,15 +86,15 @@ class FutureTest {
     @Test
     void testFilter() throws ExecutionException, InterruptedException {
         assertNotNull(Future.successful("foo").filter(Objects::nonNull).get());
-        assertThrows(IllegalStateException.class, () -> Future.failed(new IllegalStateException()).filter(ignored -> true).get());
+        assertThrowsWrapped(IllegalStateException.class, () -> Future.failed(new IllegalStateException("error")).filter(ignored -> true).get(), "error");
     }
 
     @Test
     void testTransform() throws ExecutionException, InterruptedException {
         Future<Integer> testLength = Future.successful("test").transform(result -> result.map(String::length));
         assertEquals(4, (int) testLength.get());
-        Future<String> resultFuture = Future.successful("test").transform(ignored -> Thunk.error(new IllegalStateException()));
-        assertThrows(IllegalStateException.class, resultFuture::get);
+        Future<String> resultFuture = Future.successful("test").transform(ignored -> Thunk.error(new IllegalStateException("uh-oh")));
+        assertThrowsWrapped(IllegalStateException.class, resultFuture::get, "uh-oh");
     }
 
     @Test

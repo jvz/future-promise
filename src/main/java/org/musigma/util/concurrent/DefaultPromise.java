@@ -1,6 +1,5 @@
 package org.musigma.util.concurrent;
 
-import org.musigma.util.Exceptions;
 import org.musigma.util.Thunk;
 import org.musigma.util.function.UncheckedConsumer;
 import org.musigma.util.function.UncheckedFunction;
@@ -68,49 +67,44 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
 
     @Override
     public T get() throws InterruptedException, ExecutionException {
+        final Thunk<T> thunk = tryGet();
         try {
-            return get(0, TimeUnit.SECONDS);
-        } catch (final TimeoutException e) {
+            return thunk.call();
+        } catch (final Exception e) {
             throw new ExecutionException(e);
         }
     }
 
     @Override
-    public T get(final long timeout, final TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-        try {
-            return tryGet(timeout, unit).call();
-        } catch (final Exception throwable) {
-            Exceptions.rethrowUnchecked(throwable);
-            return null;
-        }
+    public void await() throws InterruptedException {
+        tryGet();
     }
 
-    @Override
-    public void await() throws InterruptedException {
-        if (getCurrentValue() != null) {
-            return;
-        }
+    private Thunk<T> tryGet() throws InterruptedException {
+        final Thunk<T> v = getCurrentValue();
+        return v != null ? v : awaitResult();
+    }
+
+    private Thunk<T> awaitResult() throws InterruptedException {
         final CompletionLatch<T> latch = new CompletionLatch<>();
         onComplete(latch, Scheduler.parasitic());
         latch.acquireSharedInterruptibly(1);
+        return latch.getResult();
+    }
+
+    @Override
+    public T get(final long timeout, final TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+        final Thunk<T> thunk = tryGet(timeout, unit);
+        try {
+            return thunk.call();
+        } catch (final Exception e) {
+            throw new ExecutionException(e);
+        }
     }
 
     @Override
     public void await(final long time, final TimeUnit unit) throws InterruptedException, TimeoutException {
-        if (getCurrentValue() != null) {
-            return;
-        }
-        if (time == 0) {
-            await();
-            return;
-        }
-        Thunk<T> result = null;
-        if (time > 0) {
-            final CompletionLatch<T> latch = new CompletionLatch<>();
-            onComplete(latch, Scheduler.parasitic());
-            latch.tryAcquireSharedNanos(1, unit.toNanos(time));
-            result = latch.getResult();
-        }
+        final Thunk<T> result = tryGet(time, unit);
         if (result == null) {
             throw new TimeoutException("future timed out after " + time + " " + unit);
         }
@@ -121,21 +115,18 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
         if (v != null) {
             return v;
         }
-        Thunk<T> result = null;
-        if (timeout >= 0) {
-            final CompletionLatch<T> latch = new CompletionLatch<>();
-            onComplete(latch, Scheduler.parasitic());
-            if (timeout == 0) {
-                latch.acquireSharedInterruptibly(1);
-            } else {
-                latch.tryAcquireSharedNanos(1, unit.toNanos(timeout));
-            }
-            result = latch.getResult();
-        }
+        final Thunk<T> result = timeout < 0 ? null : timeout == 0 ? awaitResult() : awaitResult(timeout, unit);
         if (result == null) {
             throw new TimeoutException("future timed out after " + timeout + " " + unit);
         }
         return result;
+    }
+
+    private Thunk<T> awaitResult(final long timeout, final TimeUnit unit) throws InterruptedException {
+        final CompletionLatch<T> latch = new CompletionLatch<>();
+        onComplete(latch, Scheduler.parasitic());
+        latch.tryAcquireSharedNanos(1, unit.toNanos(timeout));
+        return latch.getResult();
     }
 
     @Override
