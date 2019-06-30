@@ -3,6 +3,7 @@ package org.musigma.util.concurrent;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.musigma.util.Exceptions;
 import org.musigma.util.Thunk;
 import org.musigma.util.function.UncheckedConsumer;
 import org.musigma.util.function.UncheckedFunction;
@@ -35,7 +36,7 @@ public class FutureTest {
     }
 
     <T> Future<T> failAsync(final String msg) {
-        return Future.failed(new AssertionError(msg));
+        return Future.failed(new RuntimeException(msg));
     }
 
     <T> T schedulerNotUsed(final UncheckedFunction<Scheduler, T> function) throws Exception {
@@ -48,7 +49,10 @@ public class FutureTest {
 
             @Override
             public void reportFailure(final Throwable t) {
-                p.failure(t);
+                if (t instanceof Error) {
+                    throw (Error) t;
+                }
+                p.failure((Exception) t);
             }
         };
         T t = function.apply(unusedScheduler);

@@ -56,13 +56,23 @@ class Never<T> implements Future<T> {
     }
 
     @Override
-    public <U> Future<U> transform(final UncheckedFunction<Thunk<T>, Thunk<U>> function, final Scheduler scheduler) {
+    public <U> Future<U> transform(final UncheckedFunction<Thunk<T>, ? extends Callable<U>> function, final Scheduler scheduler) {
         return recast();
     }
 
     @Override
-    public <U> Future<U> transformWith(final UncheckedFunction<Thunk<T>, Future<T>> function, final Scheduler scheduler) {
+    public <U> Future<U> transformWith(final UncheckedFunction<Thunk<T>, ? extends Future<T>> function, final Scheduler scheduler) {
         return recast();
+    }
+
+    @Override
+    public Future<T> recover(final UncheckedFunction<Exception, ? extends T> function, final Scheduler scheduler) {
+        return this;
+    }
+
+    @Override
+    public Future<T> recoverWith(final UncheckedFunction<Exception, ? extends Future<T>> function, final Scheduler scheduler) {
+        return this;
     }
 
     @Override

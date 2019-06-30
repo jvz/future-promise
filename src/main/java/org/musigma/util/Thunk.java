@@ -4,15 +4,21 @@ import org.musigma.util.function.UncheckedFunction;
 import org.musigma.util.function.UncheckedPredicate;
 
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 
+/**
+ * Reified result of a Callable. Provides a monadic API over success and error values.
+ * This class is comparable to {@code scala.util.Try}.
+ *
+ * @param <T> return type of this thunk
+ */
 public final class Thunk<T> implements Callable<T> {
 
-    private final Throwable error;
+    private final Exception error;
     private final T value;
 
-    private Thunk(final Throwable error) {
-        Exceptions.rethrowIfFatal(error);
+    private Thunk(final Exception error) {
         this.error = error;
         this.value = null;
     }
@@ -22,37 +28,86 @@ public final class Thunk<T> implements Callable<T> {
         this.value = value;
     }
 
+    /**
+     * Reifies the result of the provided Callable. If the given callable is not already a Thunk, it will be
+     * executed and reified into a Thunk.
+     *
+     * @param callable potentially deferrable value to reify
+     * @param <T>      type of result when successful
+     * @return the callable reified into a Thunk
+     */
     public static <T> Thunk<T> from(final Callable<T> callable) {
+        Objects.requireNonNull(callable);
         if (callable instanceof Thunk) {
             return (Thunk<T>) callable;
         }
         try {
             return value(callable.call());
-        } catch (final Throwable throwable) {
-            return error(throwable);
+        } catch (final Exception e) {
+            return error(e);
         }
     }
 
+    /**
+     * Creates a successful Thunk from a given value.
+     *
+     * @param value success value (can be null)
+     * @param <T>   type of success value
+     * @return the success value reified into a Thunk
+     */
     public static <T> Thunk<T> value(final T value) {
         return new Thunk<>(value);
     }
 
-    public static <T> Thunk<T> error(final Throwable error) {
-        return new Thunk<>(error);
+    /**
+     * Creates a failed Thunk from a given Exception.
+     *
+     * @param error error value (cannot be null)
+     * @param <T>   type of success value
+     * @return the error value reified into a Thunk
+     */
+    public static <T> Thunk<T> error(final Exception error) {
+        return new Thunk<>(Objects.requireNonNull(error));
     }
 
+    /**
+     * Returns the success value if successful or throws the error value if failed.
+     *
+     * @return this success value if successful
+     * @throws Exception this error if failure
+     */
     @Override
     public T call() throws Exception {
         if (isError()) {
-            Exceptions.rethrow(error);
+            throw error;
         }
         return value;
     }
 
+    /**
+     * Returns this error value or null if this is successful.
+     *
+     * @return this error or null
+     */
+    public Exception error() {
+        return error;
+    }
+
+    /**
+     * Indicates if this contains an error value.
+     *
+     * @return true if this has an error
+     */
     public boolean isError() {
         return error != null;
     }
 
+    /**
+     * Indicates if this contains a success value. Note that {@code null} is a valid success value, so this
+     * logically means that there is no error.
+     *
+     * @return true if this has a success value
+     */
     public boolean isSuccess() {
         return error == null;
     }
@@ -77,14 +132,14 @@ public final class Thunk<T> implements Callable<T> {
         return from(() -> function.apply(value));
     }
 
-    public <U> Thunk<U> flatMap(final UncheckedFunction<? super T, Thunk<U>> function) {
+    public <U> Thunk<U> flatMap(final UncheckedFunction<? super T, ? extends Callable<U>> function) {
         if (isError()) {
             return recast();
         }
         try {
-            return function.apply(value);
-        } catch (final Throwable throwable) {
-            return new Thunk<>(throwable);
+            return from(function.apply(value));
+        } catch (final Exception e) {
+            return error(e);
         }
     }
 
@@ -93,17 +148,34 @@ public final class Thunk<T> implements Callable<T> {
             return this;
         }
         try {
-            return predicate.test(value) ? this : new Thunk<>(new NoSuchElementException("predicated failed for " + value));
-        } catch (final Throwable throwable) {
-            return new Thunk<>(throwable);
+            return predicate.test(value) ? this : error(new NoSuchElementException("predicated failed for " + value));
+        } catch (final Exception e) {
+            return error(e);
         }
     }
 
-    public <U> Thunk<U> transform(final UncheckedFunction<? super T, Thunk<U>> ifSuccess, final UncheckedFunction<Throwable, Thunk<U>> ifError) {
+    public <U> Thunk<U> transform(final UncheckedFunction<? super T, ? extends Callable<U>> ifSuccess,
+                                  final UncheckedFunction<Exception, ? extends Callable<U>> ifError) {
         try {
-            return isSuccess() ? ifSuccess.apply(value) : ifError.apply(error);
-        } catch (final Throwable throwable) {
-            return new Thunk<>(throwable);
+            return from(isSuccess() ? ifSuccess.apply(value) : ifError.apply(error));
+        } catch (final Exception e) {
+            return error(e);
+        }
+    }
+
+    public Thunk<T> recover(final UncheckedFunction<Exception, T> function) {
+        try {
+            return isSuccess() ? this : value(function.apply(error));
+        } catch (final Exception e) {
+            return error(e);
+        }
+    }
+
+    public Thunk<T> recoverWith(final UncheckedFunction<Exception, ? extends Callable<T>> function) {
+        try {
+            return isSuccess() ? this : from(function.apply(error));
+        } catch (final Exception e) {
+            return error(e);
         }
     }
 }

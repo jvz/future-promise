@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicReference;
 class DefaultPromise<T> implements Promise<T>, Future<T> {
 
     // can be:
-    // Callable<T> or Thunk<T>
+    // Thunk<T>
     // Callbacks<T>: Transformation<T, U> or ManyCallbacks<T>
     // Link<T>
     final AtomicReference<Object> ref;
@@ -30,7 +30,7 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
     }
 
     DefaultPromise(final Callable<T> result) {
-        this((Object) result);
+        this((Object) Thunk.from(result));
     }
 
     @Override
@@ -202,7 +202,7 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
 
     @Override
     public void onComplete(final UncheckedConsumer<Thunk<T>> consumer, final Scheduler scheduler) {
-        dispatchOrAddCallbacks(new Transformation<T, Void>(consumer, scheduler, null, Transform.onComplete));
+        dispatchOrAddCallbacks(Transform.onComplete.using(consumer, scheduler));
     }
 
     @SuppressWarnings("unchecked")
@@ -213,7 +213,7 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
             // fail fast
             return (Future<U>) this;
         } else {
-            return dispatchOrAddCallbacks(new Transformation<>(function, scheduler, null, Transform.map));
+            return dispatchOrAddCallbacks(Transform.map.using(function, scheduler));
         }
     }
 
@@ -225,7 +225,7 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
             // fail fast
             return (Future<U>) this;
         } else {
-            return dispatchOrAddCallbacks(new Transformation<>(function, scheduler, null, Transform.flatMap));
+            return dispatchOrAddCallbacks(Transform.flatMap.using(function, scheduler));
         }
     }
 
@@ -236,17 +236,39 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
             // fail fast
             return this;
         } else {
-            return dispatchOrAddCallbacks(new Transformation<>(predicate, scheduler, null, Transform.filter));
+            return dispatchOrAddCallbacks(Transform.filter.using(predicate, scheduler));
         }
     }
 
     @Override
-    public <U> Future<U> transform(final UncheckedFunction<Thunk<T>, Thunk<U>> function, final Scheduler scheduler) {
-        return dispatchOrAddCallbacks(new Transformation<>(function, scheduler, null, Transform.transform));
+    public <U> Future<U> transform(final UncheckedFunction<Thunk<T>, ? extends Callable<U>> function, final Scheduler scheduler) {
+        return dispatchOrAddCallbacks(Transform.transform.using(function, scheduler));
     }
 
     @Override
-    public <U> Future<U> transformWith(final UncheckedFunction<Thunk<T>, Future<T>> function, final Scheduler scheduler) {
-        return dispatchOrAddCallbacks(new Transformation<>(function, scheduler, null, Transform.transformWith));
+    public <U> Future<U> transformWith(final UncheckedFunction<Thunk<T>, ? extends Future<T>> function, final Scheduler scheduler) {
+        return dispatchOrAddCallbacks(Transform.transformWith.using(function, scheduler));
+    }
+
+    @Override
+    public Future<T> recover(final UncheckedFunction<Exception, ? extends T> function, final Scheduler scheduler) {
+        final Object state = ref.get();
+        if (state instanceof Thunk && ((Thunk<?>) state).isSuccess()) {
+            // recover fast
+            return this;
+        } else {
+            return dispatchOrAddCallbacks(Transform.recover.using(function, scheduler));
+        }
+    }
+
+    @Override
+    public Future<T> recoverWith(final UncheckedFunction<Exception, ? extends Future<T>> function, final Scheduler scheduler) {
+        final Object state = ref.get();
+        if (state instanceof Thunk && ((Thunk<?>) state).isSuccess()) {
+            // recover fast
+            return this;
+        } else {
+            return dispatchOrAddCallbacks(Transform.recoverWith.using(function, scheduler));
+        }
     }
 }

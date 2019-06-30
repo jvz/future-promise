@@ -1,6 +1,5 @@
 package org.musigma.util.concurrent;
 
-import org.musigma.util.Exceptions;
 import org.musigma.util.Thunk;
 import org.musigma.util.function.UncheckedFunction;
 import org.musigma.util.function.UncheckedPredicate;
@@ -12,7 +11,7 @@ import java.util.concurrent.Callable;
 @Batchable
 class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Runnable {
 
-    static Transformation<?, ?> NOOP = new Transformation<>(null, Scheduler.parasitic(), null, Transform.noop);
+    static Transformation<?, ?> NOOP = Transform.noop.using(UncheckedFunction.identity(), Scheduler.parasitic());
 
     private UncheckedFunction<Object, Object> function;
     private Scheduler scheduler;
@@ -39,28 +38,23 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
         argument = resolved;
         try {
             scheduler.execute(this);
-        } catch (final Throwable t) {
+        } catch (final Exception e) {
             final Scheduler scheduler = this.scheduler;
             this.scheduler = null;
             function = null;
             argument = null;
-            handleFailure(t, scheduler);
+            handleFailure(e, scheduler);
         }
     }
 
-    private void handleFailure(final Throwable t, final Scheduler scheduler) {
-        final boolean wasInterrupted = t instanceof InterruptedException;
-        if (!wasInterrupted) {
-            Exceptions.rethrowIfFatal(t);
-        }
-        final boolean completed = tryComplete(ref.get(), resolve(Thunk.error(t)));
-        if (completed && wasInterrupted) {
+    private void handleFailure(final Exception e, final Scheduler scheduler) {
+        final boolean interrupted = e instanceof InterruptedException;
+        final boolean completed = tryComplete(ref.get(), resolve(Thunk.error(e)));
+        if (completed && interrupted) {
             Thread.currentThread().interrupt();
         }
         if (transform == Transform.onComplete || !completed) {
-            scheduler.reportFailure(t);
-        } else {
-            Exceptions.rethrowUnchecked(t);
+            scheduler.reportFailure(e);
         }
     }
 
@@ -123,7 +117,38 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
                     break;
                 }
 
+                case recover: {
+                    // F == T
+                    Callable<F> fallback;
+                    if (value.isSuccess()) {
+                        fallback = value;
+                    } else {
+                        final UncheckedFunction<Exception, F> f = (UncheckedFunction) function;
+                        fallback = resolve(value.recover(f));
+                    }
+                    resolvedResult = Thunk.from(fallback).recast();
+                    break;
+                }
+
+                case recoverWith: {
+                    // F == T
+                    if (value.isSuccess()) {
+                        resolvedResult = value.recast();
+                    } else {
+                        final UncheckedFunction<Exception, Future<T>> f = (UncheckedFunction) function;
+                        final Future<T> fallback = f.apply(value.error());
+                        if (fallback instanceof DefaultPromise) {
+                            ((DefaultPromise<T>) fallback).linkRootOf(this, null);
+                        } else {
+                            completeWith(fallback);
+                        }
+                        resolvedResult = null;
+                    }
+                    break;
+                }
+
                 case filter: {
+                    // F == T
                     final UncheckedPredicate<F> predicate = (UncheckedPredicate) function;
                     resolvedResult = value.isError() || predicate.test(value.call()) ? value.recast() : Thunk.error(new NoSuchElementException("filter predicate failed"));
                     break;
@@ -135,8 +160,8 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
             if (resolvedResult != null) {
                 tryComplete(ref.get(), resolvedResult);
             }
-        } catch (Throwable throwable) {
-            handleFailure(throwable, scheduler);
+        } catch (Exception e) {
+            handleFailure(e, scheduler);
         }
     }
 

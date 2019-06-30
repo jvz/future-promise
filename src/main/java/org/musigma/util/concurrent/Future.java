@@ -8,6 +8,7 @@ import org.musigma.util.function.UncheckedPredicate;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 
+// TODO: a lot of these methods can provide default implementations
 public interface Future<T> extends java.util.concurrent.Future<T> {
 
     Future<Void> VOID = from(() -> null);
@@ -16,8 +17,8 @@ public interface Future<T> extends java.util.concurrent.Future<T> {
         return Promise.successful(result).future();
     }
 
-    static <T> Future<T> failed(final Throwable throwable) {
-        return Promise.<T>failed(throwable).future();
+    static <T> Future<T> failed(final Exception e) {
+        return Promise.<T>failed(e).future();
     }
 
     static <T> Future<T> from(final Callable<T> thunk) {
@@ -70,15 +71,31 @@ public interface Future<T> extends java.util.concurrent.Future<T> {
 
     Future<T> filter(final UncheckedPredicate<? super T> predicate, final Scheduler scheduler);
 
-    default <U> Future<U> transform(final UncheckedFunction<Thunk<T>, Thunk<U>> function) {
+    default <U> Future<U> transform(final UncheckedFunction<Thunk<T>, ? extends Callable<U>> function) {
         return transform(function, Scheduler.common());
     }
 
-    <U> Future<U> transform(final UncheckedFunction<Thunk<T>, Thunk<U>> function, final Scheduler scheduler);
+    <U> Future<U> transform(final UncheckedFunction<Thunk<T>, ? extends Callable<U>> function, final Scheduler scheduler);
 
-    default <U> Future<U> transformWith(final UncheckedFunction<Thunk<T>, Future<T>> function) {
+    default <U> Future<U> transformWith(final UncheckedFunction<Thunk<T>, ? extends Future<T>> function) {
         return transformWith(function, Scheduler.common());
     }
 
-    <U> Future<U> transformWith(final UncheckedFunction<Thunk<T>, Future<T>> function, final Scheduler scheduler);
+    <U> Future<U> transformWith(final UncheckedFunction<Thunk<T>, ? extends Future<T>> function, final Scheduler scheduler);
+
+    default Future<T> recover(final UncheckedFunction<Exception, ? extends T> function) {
+        return recover(function, Scheduler.common());
+    }
+
+    Future<T> recover(final UncheckedFunction<Exception, ? extends T> function, final Scheduler scheduler);
+
+    default Future<T> recoverWith(final UncheckedFunction<Exception, ? extends Future<T>> function) {
+        return recoverWith(function, Scheduler.common());
+    }
+
+    Future<T> recoverWith(final UncheckedFunction<Exception, ? extends Future<T>> function, final Scheduler scheduler);
+
+    default Future<T> fallbackTo(final Future<T> fallback) {
+        return fallback == this ? this : transformWith(thunk -> thunk.isSuccess() ? this : fallback, Scheduler.parasitic());
+    }
 }

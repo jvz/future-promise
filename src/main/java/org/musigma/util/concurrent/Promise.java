@@ -18,8 +18,8 @@ public interface Promise<T> {
         return from(Thunk.value(result));
     }
 
-    static <T> Promise<T> failed(final Throwable throwable) {
-        return from(Thunk.error(throwable));
+    static <T> Promise<T> failed(final Exception e) {
+        return from(Thunk.error(e));
     }
 
     Future<T> future();
@@ -50,12 +50,12 @@ public interface Promise<T> {
         return tryComplete(Thunk.value(value));
     }
 
-    default Promise<T> failure(final Throwable throwable) {
-        return complete(Thunk.error(throwable));
+    default Promise<T> failure(final Exception e) {
+        return complete(Thunk.error(e));
     }
 
-    default boolean tryFailure(final Throwable throwable) {
-        return tryComplete(Thunk.error(throwable));
+    default boolean tryFailure(final Exception e) {
+        return tryComplete(Thunk.error(e));
     }
 
 }
