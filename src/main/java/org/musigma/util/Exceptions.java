@@ -16,14 +16,6 @@ public final class Exceptions {
         throw (T) t;
     }
 
-    public static void rethrow(final Throwable t) throws Exception {
-        if (t instanceof Exception) {
-            throw (Exception) t;
-        } else {
-            throw (Error) t;
-        }
-    }
-
     /**
      * Indicates if the given Throwable is fatal.
      *
