@@ -1,21 +1,15 @@
 package org.musigma.util.concurrent;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class ParasiticSchedulerTest {
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
+class ParasiticSchedulerTest {
 
     @Test
-    public void shouldRunOnCallingThread() {
+    void shouldRunOnCallingThread() {
         Thread t = Thread.currentThread();
         AtomicReference<Thread> tRef = new AtomicReference<>();
         Scheduler.parasitic().execute(() -> tRef.set(Thread.currentThread()));
@@ -23,23 +17,22 @@ public class ParasiticSchedulerTest {
     }
 
     @Test
-    public void shouldNotRethrowNonFatalExceptions() {
+    void shouldNotRethrowNonFatalExceptions() {
         Scheduler.parasitic().execute(() -> {
             throw new RuntimeException("do not rethrow");
         });
     }
 
     @Test
-    public void shouldRethrowFatalExceptions() {
+    void shouldRethrowFatalExceptions() {
         OutOfMemoryError error = new OutOfMemoryError("test");
-        expectedException.expect(equalTo(error));
-        Scheduler.parasitic().execute(() -> {
+        assertThrows(OutOfMemoryError.class, () -> Scheduler.parasitic().execute(() -> {
             throw error;
-        });
+        }));
     }
 
     @Test
-    public void shouldContinueAfterNonFatalException() {
+    void shouldContinueAfterNonFatalException() {
         AtomicReference<String> value = new AtomicReference<>();
         Scheduler.parasitic().execute(() -> {
             throw new RuntimeException("do not rethrow");
@@ -49,7 +42,7 @@ public class ParasiticSchedulerTest {
     }
 
     @Test
-    public void shouldNotOverflowStack() {
+    void shouldNotOverflowStack() {
         recurse(100000);
     }
 

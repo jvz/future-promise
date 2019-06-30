@@ -1,9 +1,6 @@
 package org.musigma.util.concurrent;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.musigma.util.Exceptions;
+import org.junit.jupiter.api.Test;
 import org.musigma.util.Thunk;
 import org.musigma.util.function.UncheckedConsumer;
 import org.musigma.util.function.UncheckedFunction;
@@ -11,12 +8,9 @@ import org.musigma.util.function.UncheckedFunction;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class FutureTest {
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
+class FutureTest {
 
     Future<String> testAsync(final String s, final Scheduler scheduler) {
         switch (s) {
@@ -56,7 +50,7 @@ public class FutureTest {
             }
         };
         T t = function.apply(unusedScheduler);
-        assertFalse("Future should not execute anything", p.future().getCurrent().isPresent());
+        assertFalse(p.future().getCurrent().isPresent(), "Future should not execute anything");
         return t;
     }
 
@@ -65,48 +59,45 @@ public class FutureTest {
     }
 
     @Test
-    public void testSuccessful() throws ExecutionException, InterruptedException {
+    void testSuccessful() throws ExecutionException, InterruptedException {
         Future<String> f = Future.successful("test");
         assertEquals("test", f.get());
     }
 
     @Test
-    public void testFailure() throws ExecutionException, InterruptedException {
+    void testFailure() {
         Future<Object> failed = Future.failed(new IllegalStateException());
-        expectedException.expect(IllegalStateException.class);
-        failed.get();
+        assertThrows(IllegalStateException.class, failed::get);
     }
 
     @Test
-    public void testMap() throws ExecutionException, InterruptedException {
+    void testMap() throws ExecutionException, InterruptedException {
         Future<Integer> size = Future.successful("hello").map(String::length);
         assertEquals(5, (int) size.get());
     }
 
     @Test
-    public void testFlatMap() throws ExecutionException, InterruptedException {
+    void testFlatMap() throws ExecutionException, InterruptedException {
         Future<Integer> size = Future.successful("hello").flatMap(s -> Future.successful(s.length()));
         assertEquals(5, (int) size.get());
     }
 
     @Test
-    public void testFilter() throws ExecutionException, InterruptedException {
+    void testFilter() throws ExecutionException, InterruptedException {
         assertNotNull(Future.successful("foo").filter(Objects::nonNull).get());
-        expectedException.expect(IllegalStateException.class);
-        Future.failed(new IllegalStateException()).filter(ignored -> true).get();
+        assertThrows(IllegalStateException.class, () -> Future.failed(new IllegalStateException()).filter(ignored -> true).get());
     }
 
     @Test
-    public void testTransform() throws ExecutionException, InterruptedException {
+    void testTransform() throws ExecutionException, InterruptedException {
         Future<Integer> testLength = Future.successful("test").transform(result -> result.map(String::length));
         assertEquals(4, (int) testLength.get());
         Future<String> resultFuture = Future.successful("test").transform(ignored -> Thunk.error(new IllegalStateException()));
-        expectedException.expect(IllegalStateException.class);
-        resultFuture.get();
+        assertThrows(IllegalStateException.class, resultFuture::get);
     }
 
     @Test
-    public void testVoid() throws Exception {
+    void testVoid() throws Exception {
         assertNotNull(Future.VOID);
         assertSame(Future.VOID, Future.VOID);
         assertTrue(Future.VOID.isDone());
@@ -114,7 +105,7 @@ public class FutureTest {
     }
 
     @Test
-    public void testNever() throws Exception {
+    void testNever() throws Exception {
         assertNotNull(Future.never());
         Future<Void> never = Future.never();
         assertSame(never, Future.never());
