@@ -31,7 +31,7 @@ class Never<T> implements Future<T> {
     }
 
     @Override
-    public Optional<Callable<T>> getCurrent() {
+    public Optional<Thunk<T>> getCurrent() {
         return Optional.empty();
     }
 
@@ -102,4 +102,13 @@ class Never<T> implements Future<T> {
         throw new TimeoutException("future timed out after " + timeout + ' ' + unit);
     }
 
+    @Override
+    public void await() throws InterruptedException {
+        never.await();
+    }
+
+    @Override
+    public void await(final long time, final TimeUnit unit) throws InterruptedException, TimeoutException {
+        never.await(time, unit);
+    }
 }

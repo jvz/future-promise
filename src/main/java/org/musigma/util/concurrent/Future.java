@@ -9,7 +9,7 @@ import java.util.Optional;
 import java.util.concurrent.Callable;
 
 // TODO: a lot of these methods can provide default implementations
-public interface Future<T> extends java.util.concurrent.Future<T> {
+public interface Future<T> extends AwaitableFuture<T> {
 
     Future<Void> VOID = from(() -> null);
 
@@ -51,7 +51,7 @@ public interface Future<T> extends java.util.concurrent.Future<T> {
 
     void onComplete(final UncheckedConsumer<Thunk<T>> consumer, final Scheduler scheduler);
 
-    Optional<Callable<T>> getCurrent();
+    Optional<Thunk<T>> getCurrent();
 
     default <U> Future<U> map(final UncheckedFunction<? super T, ? extends U> function) {
         return map(function, Scheduler.common());

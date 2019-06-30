@@ -34,15 +34,15 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
     }
 
     @Override
-    public Optional<Callable<T>> getCurrent() {
+    public Optional<Thunk<T>> getCurrent() {
         return Optional.ofNullable(getCurrentValue());
     }
 
     @SuppressWarnings("unchecked")
-    private Callable<T> getCurrentValue() {
+    private Thunk<T> getCurrentValue() {
         final Object state = ref.get();
-        if (state instanceof Callable) {
-            return (Callable<T>) state;
+        if (state instanceof Thunk) {
+            return (Thunk<T>) state;
         } else if (state instanceof Link) {
             return ((Link<T>) state).promise(this).getCurrentValue();
         } else {
@@ -85,12 +85,43 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
         }
     }
 
-    private Callable<T> tryGet(final long timeout, final TimeUnit unit) throws InterruptedException, TimeoutException {
-        final Callable<T> v = getCurrentValue();
+    @Override
+    public void await() throws InterruptedException {
+        if (getCurrentValue() != null) {
+            return;
+        }
+        final CompletionLatch<T> latch = new CompletionLatch<>();
+        onComplete(latch, Scheduler.parasitic());
+        latch.acquireSharedInterruptibly(1);
+    }
+
+    @Override
+    public void await(final long time, final TimeUnit unit) throws InterruptedException, TimeoutException {
+        if (getCurrentValue() != null) {
+            return;
+        }
+        if (time == 0) {
+            await();
+            return;
+        }
+        Thunk<T> result = null;
+        if (time > 0) {
+            final CompletionLatch<T> latch = new CompletionLatch<>();
+            onComplete(latch, Scheduler.parasitic());
+            latch.tryAcquireSharedNanos(1, unit.toNanos(time));
+            result = latch.getResult();
+        }
+        if (result == null) {
+            throw new TimeoutException("future timed out after " + time + " " + unit);
+        }
+    }
+
+    private Thunk<T> tryGet(final long timeout, final TimeUnit unit) throws InterruptedException, TimeoutException {
+        final Thunk<T> v = getCurrentValue();
         if (v != null) {
             return v;
         }
-        Callable<T> result = null;
+        Thunk<T> result = null;
         if (timeout >= 0) {
             final CompletionLatch<T> latch = new CompletionLatch<>();
             onComplete(latch, Scheduler.parasitic());
