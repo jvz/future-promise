@@ -5,6 +5,7 @@ import org.musigma.util.Exceptions;
 import org.opentest4j.AssertionFailedError;
 
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -18,6 +19,10 @@ public class Assertions {
                     () -> assertNotNull(wrapped),
                     () -> assertEquals(wrappedType, wrapped.getClass()),
                     () -> assertEquals(errorMessage, wrapped.getMessage()));
+        } catch (final InterruptedException | TimeoutException e) {
+            assertAll(
+                    () -> assertEquals(wrappedType, e.getClass()),
+                    () -> assertEquals(errorMessage, e.getMessage()));
         } catch (final Throwable t) {
             Exceptions.rethrowIfFatal(t);
             throw new AssertionFailedError("unexpected exception type", ExecutionException.class, t.getClass(), t);

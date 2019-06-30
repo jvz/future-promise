@@ -115,6 +115,14 @@ class PromiseTest {
         return futureWithError(p.future(), RuntimeException.class, errorMessage);
     }
 
+    @TestFactory
+    List<DynamicTest> interruptedPromiseTests() {
+        String errorMessage = "interrupted by user input";
+        Promise<String> p = Promise.failed(new InterruptedException(errorMessage));
+        assertTrue(p.isDone());
+        return futureWithError(p.future(), InterruptedException.class, errorMessage);
+    }
+
     private static List<DynamicTest> futureWithError(final Future<String> future, final Class<? extends Exception> errorType, final String errorMessage) {
         return Arrays.asList(
                 dynamicTest("shouldBeDone", () ->
