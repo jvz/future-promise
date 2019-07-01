@@ -1,6 +1,6 @@
 package org.musigma.util.concurrent;
 
-import org.musigma.util.Exceptions;
+import org.musigma.util.control.Exceptions;
 
 class SyncBatch extends AbstractBatch<SyncBatchingScheduler> implements Runnable {
 

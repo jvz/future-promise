@@ -1,4 +1,4 @@
-package org.musigma.util;
+package org.musigma.util.control;
 
 /**
  * Exception utilities for dealing with checked and fatal exceptions.
@@ -25,7 +25,7 @@ public final class Exceptions {
      * @see LinkageError
      */
     public static boolean isFatal(final Throwable t) {
-        return t instanceof VirtualMachineError || t instanceof ThreadDeath || t instanceof InterruptedException || t instanceof LinkageError;
+        return t instanceof VirtualMachineError || t instanceof ThreadDeath || t instanceof InterruptedException || t instanceof LinkageError || t instanceof ControlThrowable;
     }
 
     /**

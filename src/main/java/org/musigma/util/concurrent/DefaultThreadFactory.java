@@ -1,6 +1,6 @@
 package org.musigma.util.concurrent;
 
-import org.musigma.util.Exceptions;
+import org.musigma.util.control.Exceptions;
 
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.Objects;
