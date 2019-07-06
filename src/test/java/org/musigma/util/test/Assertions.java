@@ -1,7 +1,7 @@
 package org.musigma.util.test;
 
 import org.junit.jupiter.api.function.Executable;
-import org.musigma.util.control.Exceptions;
+import org.musigma.util.Exceptions;
 import org.opentest4j.AssertionFailedError;
 
 import java.util.concurrent.ExecutionException;
