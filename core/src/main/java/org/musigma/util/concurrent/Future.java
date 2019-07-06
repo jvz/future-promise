@@ -1,6 +1,8 @@
 package org.musigma.util.concurrent;
 
+import org.musigma.util.Pair;
 import org.musigma.util.Thunk;
+import org.musigma.util.function.UncheckedBiFunction;
 import org.musigma.util.function.UncheckedConsumer;
 import org.musigma.util.function.UncheckedFunction;
 import org.musigma.util.function.UncheckedPredicate;
@@ -97,5 +99,16 @@ public interface Future<T> extends AwaitableFuture<T> {
 
     default Future<T> fallbackTo(final Future<T> fallback) {
         return fallback == this ? this : transformWith(thunk -> thunk.isSuccess() ? this : fallback, Scheduler.parasitic());
+    }
+
+    default <U> Future<Pair<T, U>> zip(final Future<U> that) {
+        return zipWith(that, Pair::of, Scheduler.parasitic());
+    }
+
+    default <U, R> Future<R> zipWith(final Future<U> that,
+                                     final UncheckedBiFunction<? super T, ? super U, ? extends R> function,
+                                     final Scheduler scheduler) {
+        Scheduler s = scheduler instanceof BatchingScheduler ? scheduler : Scheduler.parasitic();
+        return flatMap(t -> that.map(u -> function.apply(t, u), s), s);
     }
 }
