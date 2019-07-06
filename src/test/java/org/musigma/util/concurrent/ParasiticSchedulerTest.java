@@ -8,6 +8,17 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ParasiticSchedulerTest {
 
+    private static class NoStackTrace extends RuntimeException {
+        private NoStackTrace() {
+            super("do not rethrow", null, false, false);
+        }
+
+        @Override
+        public synchronized Throwable fillInStackTrace() {
+            return this;
+        }
+    }
+
     @Test
     void shouldRunOnCallingThread() {
         Thread t = Thread.currentThread();
@@ -19,7 +30,7 @@ class ParasiticSchedulerTest {
     @Test
     void shouldNotRethrowNonFatalExceptions() {
         Scheduler.parasitic().execute(() -> {
-            throw new RuntimeException("do not rethrow");
+            throw new NoStackTrace();
         });
     }
 
@@ -35,7 +46,7 @@ class ParasiticSchedulerTest {
     void shouldContinueAfterNonFatalException() {
         AtomicReference<String> value = new AtomicReference<>();
         Scheduler.parasitic().execute(() -> {
-            throw new RuntimeException("do not rethrow");
+            throw new NoStackTrace();
         });
         Scheduler.parasitic().execute(() -> value.set("hello world"));
         assertEquals("hello world", value.get());
