@@ -41,18 +41,8 @@ class DefaultSchedulerExecutorService extends ForkJoinPool implements SchedulerE
     }
 
     @Override
-    public AsyncBatch getCurrentBatch() {
-        return asyncContext.get();
-    }
-
-    @Override
-    public void setCurrentBatch(final AsyncBatch batch) {
-        asyncContext.set(batch);
-    }
-
-    @Override
-    public void clearCurrentBatch() {
-        asyncContext.remove();
+    public ThreadLocal<AsyncBatch> asyncContext() {
+        return asyncContext;
     }
 
     @Override
