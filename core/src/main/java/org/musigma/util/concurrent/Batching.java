@@ -20,8 +20,6 @@ class Batching {
 
         void setCurrentBatch(final BatchT batch);
 
-        void clearCurrentBatch();
-
         void submitForExecution(final Runnable runnable);
 
     }
@@ -72,7 +70,6 @@ class Batching {
             asyncContext().set(batch);
         }
 
-        @Override
         default void clearCurrentBatch() {
             asyncContext().remove();
         }

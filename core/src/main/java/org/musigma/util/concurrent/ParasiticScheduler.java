@@ -37,11 +37,6 @@ class ParasiticScheduler implements SchedulerExecutor, Batching.SyncBatchingSche
     }
 
     @Override
-    public void clearCurrentBatch() {
-        syncContext.remove();
-    }
-
-    @Override
     public void submitForExecution(final Runnable runnable) {
         runnable.run();
     }
