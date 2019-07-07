@@ -154,7 +154,7 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
                 } else {
                     currentState = ref.get();
                 }
-            } else if (state instanceof Link) {
+            } else if (currentState instanceof Link) {
                 final DefaultPromise<T> promise = ((Link<T>) state).promise(this);
                 return promise != this && promise.tryComplete(promise.ref.get(), resolved);
             } else {
