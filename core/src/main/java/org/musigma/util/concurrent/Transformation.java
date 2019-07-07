@@ -5,7 +5,6 @@ import org.musigma.util.function.UncheckedFunction;
 import org.musigma.util.function.UncheckedPredicate;
 
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.concurrent.Callable;
 
 @Batchable
@@ -35,12 +34,6 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
         this.transformType = transformType;
     }
 
-    private static <T> Callable<T> resolve(final Callable<T> value) {
-        Objects.requireNonNull(value);
-        // TODO: this can support the use of a ControlThrowable and similar
-        return value;
-    }
-
     @Override
     public void submitWithValue(final Callable<F> resolved) {
         argument = resolved;
@@ -57,7 +50,7 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
 
     private void handleFailure(final Exception e, final Scheduler scheduler) {
         final boolean interrupted = e instanceof InterruptedException;
-        final boolean completed = tryComplete(ref.get(), resolve(Thunk.error(e)));
+        final boolean completed = tryComplete(ref.get(), Thunk.error(e));
         if (completed && interrupted) {
             Thread.currentThread().interrupt();
         }
@@ -106,7 +99,7 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
                 }
 
                 case transform: {
-                    resolvedResult = resolve((Thunk<T>) function.apply(value));
+                    resolvedResult = (Thunk<T>) function.apply(value);
                     break;
                 }
 
@@ -132,7 +125,7 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
                         fallback = value;
                     } else {
                         final UncheckedFunction<Exception, F> f = (UncheckedFunction) function;
-                        fallback = resolve(value.recover(f));
+                        fallback = value.recover(f);
                     }
                     resolvedResult = Thunk.from(fallback).recast();
                     break;
