@@ -178,4 +178,24 @@ public final class Thunk<T> implements Callable<T> {
             return error(e);
         }
     }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        final Thunk<?> thunk = (Thunk<?>) o;
+        return Objects.equals(error, thunk.error) &&
+                Objects.equals(value, thunk.value);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(error, value);
+    }
+
+    @Override
+    public String toString() {
+        return isError() ? "Error{" + error + '}' : "Value{" + value + '}';
+    }
+
 }
