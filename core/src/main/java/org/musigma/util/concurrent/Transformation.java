@@ -11,20 +11,28 @@ import java.util.concurrent.Callable;
 @Batchable
 class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Runnable {
 
-    static Transformation<?, ?> NOOP = Transform.noop.using(UncheckedFunction.identity(), Scheduler.parasitic());
+    enum Type {
+        noop, map, flatMap, transform, transformWith, onComplete, recover, recoverWith, filter;
+
+        <F, T> Transformation<F, T> using(final UncheckedFunction<?, ?> function, final Scheduler scheduler) {
+            return new Transformation<>(function, scheduler, null, this);
+        }
+    }
+
+    static Transformation<?, ?> NOOP = Type.noop.using(UncheckedFunction.identity(), Scheduler.parasitic());
 
     private UncheckedFunction<Object, Object> function;
     private Scheduler scheduler;
     private Callable<F> argument;
-    private Transform transform;
+    private Type transformType;
 
     @SuppressWarnings("unchecked")
-    Transformation(final UncheckedFunction<?, ?> function, final Scheduler scheduler, final Callable<F> argument, final Transform transform) {
+    private Transformation(final UncheckedFunction<?, ?> function, final Scheduler scheduler, final Callable<F> argument, final Type transformType) {
         super();
         this.function = (UncheckedFunction<Object, Object>) function;
         this.scheduler = scheduler;
         this.argument = argument;
-        this.transform = transform;
+        this.transformType = transformType;
     }
 
     private static <T> Callable<T> resolve(final Callable<T> value) {
@@ -53,13 +61,13 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
         if (completed && interrupted) {
             Thread.currentThread().interrupt();
         }
-        if (transform == Transform.onComplete || !completed) {
+        if (transformType == Type.onComplete || !completed) {
             scheduler.reportFailure(e);
         }
     }
 
     boolean benefitsFromBatching() {
-        return transform != Transform.onComplete;
+        return transformType != Type.onComplete;
     }
 
     @SuppressWarnings("unchecked")
@@ -73,7 +81,7 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
         this.scheduler = null;
         try {
             Callable<T> resolvedResult = null;
-            switch (transform) {
+            switch (transformType) {
                 case noop:
                     break;
 
@@ -169,4 +177,5 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
     public Callbacks<F> concat(final Callbacks<F> next) {
         return new ManyCallbacks<>(this, next);
     }
+
 }
