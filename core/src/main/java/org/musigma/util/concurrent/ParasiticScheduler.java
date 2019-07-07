@@ -1,6 +1,6 @@
 package org.musigma.util.concurrent;
 
-class ParasiticScheduler implements SchedulerExecutor, SyncBatchingScheduler {
+class ParasiticScheduler implements SchedulerExecutor, Batching.SyncBatchingScheduler {
 
     private final ThreadLocal<Object> syncContext = new ThreadLocal<>();
 
@@ -26,13 +26,13 @@ class ParasiticScheduler implements SchedulerExecutor, SyncBatchingScheduler {
     }
 
     @Override
-    public SyncBatch getCurrentBatch() {
+    public Batching.SyncBatch getCurrentBatch() {
         Object o = syncContext.get();
-        return o instanceof SyncBatch ? (SyncBatch) o : null;
+        return o instanceof Batching.SyncBatch ? (Batching.SyncBatch) o : null;
     }
 
     @Override
-    public void setCurrentBatch(final SyncBatch batch) {
+    public void setCurrentBatch(final Batching.SyncBatch batch) {
         syncContext.set(batch);
     }
 

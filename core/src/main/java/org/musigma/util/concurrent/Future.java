@@ -108,7 +108,7 @@ public interface Future<T> extends AwaitableFuture<T> {
     default <U, R> Future<R> zipWith(final Future<U> that,
                                      final UncheckedBiFunction<? super T, ? super U, ? extends R> function,
                                      final Scheduler scheduler) {
-        Scheduler s = scheduler instanceof BatchingScheduler ? scheduler : Scheduler.parasitic();
+        Scheduler s = scheduler instanceof Batching.BatchingScheduler ? scheduler : Scheduler.parasitic();
         return flatMap(t -> that.map(u -> function.apply(t, u), s), s);
     }
 }
