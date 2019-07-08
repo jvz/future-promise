@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class ParasiticSchedulerTest {
+class ParasiticExecutorServiceTest {
 
     private static class NoStackTrace extends RuntimeException {
         private NoStackTrace() {
@@ -23,13 +23,13 @@ class ParasiticSchedulerTest {
     void shouldRunOnCallingThread() {
         Thread t = Thread.currentThread();
         AtomicReference<Thread> tRef = new AtomicReference<>();
-        Scheduler.parasitic().execute(() -> tRef.set(Thread.currentThread()));
+        Executors.parasitic().execute(() -> tRef.set(Thread.currentThread()));
         assertSame(t, tRef.get());
     }
 
     @Test
     void shouldNotRethrowNonFatalExceptions() {
-        Scheduler.parasitic().execute(() -> {
+        Executors.parasitic().execute(() -> {
             throw new NoStackTrace();
         });
     }
@@ -37,7 +37,7 @@ class ParasiticSchedulerTest {
     @Test
     void shouldRethrowFatalExceptions() {
         OutOfMemoryError error = new OutOfMemoryError("test");
-        assertThrows(OutOfMemoryError.class, () -> Scheduler.parasitic().execute(() -> {
+        assertThrows(OutOfMemoryError.class, () -> Executors.parasitic().execute(() -> {
             throw error;
         }));
     }
@@ -45,10 +45,10 @@ class ParasiticSchedulerTest {
     @Test
     void shouldContinueAfterNonFatalException() {
         AtomicReference<String> value = new AtomicReference<>();
-        Scheduler.parasitic().execute(() -> {
+        Executors.parasitic().execute(() -> {
             throw new NoStackTrace();
         });
-        Scheduler.parasitic().execute(() -> value.set("hello world"));
+        Executors.parasitic().execute(() -> value.set("hello world"));
         assertEquals("hello world", value.get());
     }
 
@@ -59,7 +59,7 @@ class ParasiticSchedulerTest {
 
     private void recurse(final int i) {
         if (i > 0) {
-            Scheduler.parasitic().execute(() -> recurse(i - 1));
+            Executors.parasitic().execute(() -> recurse(i - 1));
         }
     }
 

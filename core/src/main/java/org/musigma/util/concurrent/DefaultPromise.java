@@ -8,6 +8,7 @@ import org.musigma.util.function.UncheckedPredicate;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -89,7 +90,7 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
 
     private Thunk<T> awaitResult() throws InterruptedException {
         final CompletionLatch<T> latch = new CompletionLatch<>();
-        onComplete(latch, Scheduler.parasitic());
+        onComplete(latch, Executors.parasitic());
         latch.acquireSharedInterruptibly(1);
         return latch.getResult();
     }
@@ -126,7 +127,7 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
 
     private Thunk<T> awaitResult(final long timeout, final TimeUnit unit) throws InterruptedException {
         final CompletionLatch<T> latch = new CompletionLatch<>();
-        onComplete(latch, Scheduler.parasitic());
+        onComplete(latch, Executors.parasitic());
         latch.tryAcquireSharedNanos(1, unit.toNanos(timeout));
         return latch.getResult();
     }
@@ -225,74 +226,74 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
     }
 
     @Override
-    public void onComplete(final UncheckedConsumer<Thunk<T>> consumer, final Scheduler scheduler) {
-        dispatchOrAddCallbacks(onComplete.using(consumer, scheduler));
+    public void onComplete(final UncheckedConsumer<Thunk<T>> consumer, final ExecutorService executorService) {
+        dispatchOrAddCallbacks(onComplete.using(consumer, executorService));
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    public <U> Future<U> map(final UncheckedFunction<? super T, ? extends U> function, final Scheduler scheduler) {
+    public <U> Future<U> map(final UncheckedFunction<? super T, ? extends U> function, final ExecutorService executorService) {
         final Object state = ref.get();
         if (state instanceof Thunk && ((Thunk<?>) state).isError()) {
             // fail fast
             return (Future<U>) this;
         } else {
-            return dispatchOrAddCallbacks(map.using(function, scheduler));
+            return dispatchOrAddCallbacks(map.using(function, executorService));
         }
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    public <U> Future<U> flatMap(final UncheckedFunction<? super T, ? extends Future<U>> function, final Scheduler scheduler) {
+    public <U> Future<U> flatMap(final UncheckedFunction<? super T, ? extends Future<U>> function, final ExecutorService executorService) {
         final Object state = ref.get();
         if (state instanceof Thunk && ((Thunk<?>) state).isError()) {
             // fail fast
             return (Future<U>) this;
         } else {
-            return dispatchOrAddCallbacks(flatMap.using(function, scheduler));
+            return dispatchOrAddCallbacks(flatMap.using(function, executorService));
         }
     }
 
     @Override
-    public Future<T> filter(final UncheckedPredicate<? super T> predicate, final Scheduler scheduler) {
+    public Future<T> filter(final UncheckedPredicate<? super T> predicate, final ExecutorService executorService) {
         final Object state = ref.get();
         if (state instanceof Thunk && ((Thunk<?>) state).isError()) {
             // fail fast
             return this;
         } else {
-            return dispatchOrAddCallbacks(filter.using(predicate, scheduler));
+            return dispatchOrAddCallbacks(filter.using(predicate, executorService));
         }
     }
 
     @Override
-    public <U> Future<U> transform(final UncheckedFunction<Thunk<T>, ? extends Callable<U>> function, final Scheduler scheduler) {
-        return dispatchOrAddCallbacks(transform.using(function, scheduler));
+    public <U> Future<U> transform(final UncheckedFunction<Thunk<T>, ? extends Callable<U>> function, final ExecutorService executorService) {
+        return dispatchOrAddCallbacks(transform.using(function, executorService));
     }
 
     @Override
-    public <U> Future<U> transformWith(final UncheckedFunction<Thunk<T>, ? extends Future<T>> function, final Scheduler scheduler) {
-        return dispatchOrAddCallbacks(transformWith.using(function, scheduler));
+    public <U> Future<U> transformWith(final UncheckedFunction<Thunk<T>, ? extends Future<T>> function, final ExecutorService executorService) {
+        return dispatchOrAddCallbacks(transformWith.using(function, executorService));
     }
 
     @Override
-    public Future<T> recover(final UncheckedFunction<Exception, ? extends T> function, final Scheduler scheduler) {
+    public Future<T> recover(final UncheckedFunction<Exception, ? extends T> function, final ExecutorService executorService) {
         final Object state = ref.get();
         if (state instanceof Thunk && ((Thunk<?>) state).isSuccess()) {
             // recover fast
             return this;
         } else {
-            return dispatchOrAddCallbacks(recover.using(function, scheduler));
+            return dispatchOrAddCallbacks(recover.using(function, executorService));
         }
     }
 
     @Override
-    public Future<T> recoverWith(final UncheckedFunction<Exception, ? extends Future<T>> function, final Scheduler scheduler) {
+    public Future<T> recoverWith(final UncheckedFunction<Exception, ? extends Future<T>> function, final ExecutorService executorService) {
         final Object state = ref.get();
         if (state instanceof Thunk && ((Thunk<?>) state).isSuccess()) {
             // recover fast
             return this;
         } else {
-            return dispatchOrAddCallbacks(recoverWith.using(function, scheduler));
+            return dispatchOrAddCallbacks(recoverWith.using(function, executorService));
         }
     }
 }

@@ -5,6 +5,7 @@ import org.junit.jupiter.api.DynamicNode;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
+import org.musigma.util.test.AbstractTestExecutorService;
 import org.musigma.util.test.Iterators;
 import org.musigma.util.Pair;
 import org.musigma.util.Thunk;
@@ -22,10 +23,13 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -349,15 +353,15 @@ class DefaultPromiseTest {
             int chainId = chainPair.getLeft();
             Chain chain = chainPair.getRight();
             ChainState state;
-            Scheduler inline = new Scheduler() {
+            ExecutorService inline = new AbstractTestExecutorService() {
                 @Override
-                public void execute(final Runnable runnable) {
-                    runnable.run();
+                public void execute(final Runnable command) {
+                    command.run();
                 }
 
                 @Override
-                public void reportFailure(final Throwable t) {
-                    t.printStackTrace();
+                public void reportFailure(final Throwable error) {
+                    error.printStackTrace();
                 }
             };
             Callable<Void> attachHandler = () -> {
@@ -540,14 +544,14 @@ class DefaultPromiseTest {
             CountDownLatch startLatch = new CountDownLatch(1);
             CountDownLatch doneLatch = new CountDownLatch(flatMapCount + 1);
             Consumer<Runnable> execute = r -> {
-                Scheduler s = Scheduler.common();
-                s.execute(() -> {
+                final Batching.DefaultExecutorService es = (Batching.DefaultExecutorService) Executors.common();
+                es.execute(() -> {
                     try {
                         startLatch.await();
                         r.run();
                         doneLatch.countDown();
                     } catch (Exception e) {
-                        s.reportFailure(e);
+                        es.reportFailure(e);
                     }
                 });
             };

@@ -6,6 +6,7 @@ import org.musigma.util.function.UncheckedPredicate;
 
 import java.util.NoSuchElementException;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
 
 @Batchable
 class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Runnable {
@@ -13,23 +14,23 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
     enum Type {
         noop, map, flatMap, transform, transformWith, onComplete, recover, recoverWith, filter;
 
-        <F, T> Transformation<F, T> using(final UncheckedFunction<?, ?> function, final Scheduler scheduler) {
-            return new Transformation<>(function, scheduler, null, this);
+        <F, T> Transformation<F, T> using(final UncheckedFunction<?, ?> function, final ExecutorService executorService) {
+            return new Transformation<>(function, executorService, null, this);
         }
     }
 
-    static Transformation<?, ?> NOOP = Type.noop.using(UncheckedFunction.identity(), Scheduler.parasitic());
+    static Transformation<?, ?> NOOP = Type.noop.using(UncheckedFunction.identity(), Executors.parasitic());
 
     private UncheckedFunction<Object, Object> function;
-    private Scheduler scheduler;
+    private ExecutorService executorService;
     private Callable<F> argument;
     private Type transformType;
 
     @SuppressWarnings("unchecked")
-    private Transformation(final UncheckedFunction<?, ?> function, final Scheduler scheduler, final Callable<F> argument, final Type transformType) {
+    private Transformation(final UncheckedFunction<?, ?> function, final ExecutorService executorService, final Callable<F> argument, final Type transformType) {
         super();
         this.function = (UncheckedFunction<Object, Object>) function;
-        this.scheduler = scheduler;
+        this.executorService = executorService;
         this.argument = argument;
         this.transformType = transformType;
     }
@@ -38,24 +39,28 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
     public void submitWithValue(final Callable<F> resolved) {
         argument = resolved;
         try {
-            scheduler.execute(this);
+            executorService.execute(this);
         } catch (final Exception e) {
-            final Scheduler scheduler = this.scheduler;
-            this.scheduler = null;
+            final ExecutorService executorService = this.executorService;
+            this.executorService = null;
             function = null;
             argument = null;
-            handleFailure(e, scheduler);
+            handleFailure(e, executorService);
         }
     }
 
-    private void handleFailure(final Exception e, final Scheduler scheduler) {
+    private void handleFailure(final Exception e, final ExecutorService executorService) {
         final boolean interrupted = e instanceof InterruptedException;
         final boolean completed = tryComplete(ref.get(), Thunk.error(e));
         if (completed && interrupted) {
             Thread.currentThread().interrupt();
         }
         if (transformType == Type.onComplete || !completed) {
-            scheduler.reportFailure(e);
+            if (executorService instanceof Batching.BatchingExecutorService) {
+                ((Batching.BatchingExecutorService) executorService).reportFailure(e);
+            } else {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -70,8 +75,8 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
         this.argument = null;
         final UncheckedFunction<Object, Object> function = this.function;
         this.function = null;
-        final Scheduler scheduler = this.scheduler;
-        this.scheduler = null;
+        final ExecutorService executorService = this.executorService;
+        this.executorService = null;
         try {
             Callable<T> resolvedResult = null;
             switch (transformType) {
@@ -162,7 +167,7 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
                 tryComplete(ref.get(), resolvedResult);
             }
         } catch (Exception e) {
-            handleFailure(e, scheduler);
+            handleFailure(e, executorService);
         }
     }
 

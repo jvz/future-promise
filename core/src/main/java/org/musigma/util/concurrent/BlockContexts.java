@@ -15,6 +15,7 @@ public class BlockContexts {
         return thread instanceof BlockContext ? (BlockContext) thread : BlockContext.DEFAULT;
     }
 
+    // TODO: move to BlockContext and make this package-private
     public static BlockContext current() {
         return prefer(LOCAL_CONTEXT.get());
     }

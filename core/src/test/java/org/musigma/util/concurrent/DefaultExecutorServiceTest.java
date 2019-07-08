@@ -3,23 +3,24 @@ package org.musigma.util.concurrent;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-class DefaultSchedulerExecutorServiceTest {
+class DefaultExecutorServiceTest {
 
     @Test
     void testDefaultSchedulerReportsUncaughtExceptions() throws ExecutionException, InterruptedException {
         Promise<Throwable> p = Promise.newPromise();
-        SchedulerExecutorService ses = SchedulerExecutorService.fromExecutorService(null, p::trySuccess);
+        ExecutorService es = Batching.createDefaultExecutor(p::trySuccess);
         RuntimeException e = new RuntimeException();
         try {
-            ses.execute(() -> {
+            es.execute(() -> {
                 throw e;
             });
             assertSame(e, p.future().get());
         } finally {
-            ses.shutdown();
+            es.shutdown();
         }
     }
 

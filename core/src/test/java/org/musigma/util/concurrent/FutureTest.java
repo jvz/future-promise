@@ -4,16 +4,18 @@ import org.junit.jupiter.api.Test;
 import org.musigma.util.Thunk;
 import org.musigma.util.function.UncheckedConsumer;
 import org.musigma.util.function.UncheckedFunction;
+import org.musigma.util.test.AbstractTestExecutorService;
 
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.musigma.util.test.Assertions.assertThrowsWrapped;
 
 class FutureTest {
 
-    Future<String> testAsync(final String s, final Scheduler scheduler) {
+    Future<String> testAsync(final String s, final ExecutorService scheduler) {
         switch (s) {
             case "Hello":
                 return Future.fromAsync(() -> "World", scheduler);
@@ -34,9 +36,9 @@ class FutureTest {
         return Future.failed(new RuntimeException(msg));
     }
 
-    <T> T schedulerNotUsed(final UncheckedFunction<Scheduler, T> function) throws Exception {
+    <T> T schedulerNotUsed(final UncheckedFunction<ExecutorService, T> function) throws Exception {
         final Promise<Runnable> p = Promise.newPromise();
-        final Scheduler unusedScheduler = new Scheduler() {
+        final ExecutorService unusedExecutorService = new AbstractTestExecutorService() {
             @Override
             public void execute(final Runnable runnable) {
                 p.success(runnable);
@@ -50,12 +52,12 @@ class FutureTest {
                 p.failure((Exception) t);
             }
         };
-        T t = function.apply(unusedScheduler);
+        T t = function.apply(unusedExecutorService);
         assertFalse(p.future().getCurrent().isPresent(), "Future should not execute anything");
         return t;
     }
 
-    void schedulerNotUsedV(final UncheckedConsumer<Scheduler> consumer) throws Exception {
+    void schedulerNotUsedV(final UncheckedConsumer<ExecutorService> consumer) throws Exception {
         schedulerNotUsed(consumer);
     }
 
