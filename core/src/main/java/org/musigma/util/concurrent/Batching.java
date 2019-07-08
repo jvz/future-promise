@@ -147,7 +147,7 @@ class Batching {
             executorService.setCurrentTask(this); // later cleared in apply()
             Throwable failure;
             try {
-                failure = resubmit(BlockContexts.usingBlockContext(this, this));
+                failure = resubmit(this.using(this));
             } catch (final Throwable throwable) {
                 failure = throwable;
             }

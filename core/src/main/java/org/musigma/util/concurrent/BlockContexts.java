@@ -1,9 +1,10 @@
 package org.musigma.util.concurrent;
 
-import org.musigma.util.Thunk;
 import org.musigma.util.function.UncheckedFunction;
 
-public class BlockContexts {
+import java.util.concurrent.Callable;
+
+class BlockContexts {
 
     private static final ThreadLocal<BlockContext> LOCAL_CONTEXT = new ThreadLocal<>();
 
@@ -15,25 +16,24 @@ public class BlockContexts {
         return thread instanceof BlockContext ? (BlockContext) thread : BlockContext.DEFAULT;
     }
 
-    // TODO: move to BlockContext and make this package-private
-    public static BlockContext current() {
+    static BlockContext current() {
         return prefer(LOCAL_CONTEXT.get());
     }
 
-    public static <T> T withBlockContext(final BlockContext context, final Thunk<T> thunk) throws Exception {
+    static <T> T withBlockContext(final BlockContext context, final Callable<T> callable) throws Exception {
         final BlockContext previous = LOCAL_CONTEXT.get();
         if (previous == context) {
-            return thunk.call();
+            return callable.call();
         }
         LOCAL_CONTEXT.set(context);
         try {
-            return thunk.call();
+            return callable.call();
         } finally {
             LOCAL_CONTEXT.set(previous);
         }
     }
 
-    public static <T> T usingBlockContext(final BlockContext context, final UncheckedFunction<BlockContext, T> function) throws Exception {
+    static <T> T usingBlockContext(final BlockContext context, final UncheckedFunction<? super BlockContext, ? extends T> function) throws Exception {
         final BlockContext previous = LOCAL_CONTEXT.get();
         if (previous == context) {
             return function.apply(prefer(previous));
