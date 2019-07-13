@@ -84,7 +84,7 @@ class PromiseTest {
                 dynamicTest("shouldFilterResult", () ->
                         assertAll(
                                 () -> assertEquals(result, future.filter(ignored -> true).get()),
-                                () -> assertThrowsWrapped(NoSuchElementException.class, () -> future.filter(ignored -> false).get(), "filter predicate failed"))),
+                                () -> assertThrowsWrapped(NoSuchElementException.class, () -> future.filter(ignored -> false).get(), "predicate failed for " + result))),
                 dynamicTest("shouldTransformResultWithMap", () ->
                         assertEquals(result.length(), future.map(Object::toString).map(String::length).get())),
                 dynamicTest("shouldComposeWithFlatMap", () ->

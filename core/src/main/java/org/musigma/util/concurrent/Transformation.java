@@ -1,10 +1,10 @@
 package org.musigma.util.concurrent;
 
 import org.musigma.util.Thunk;
+import org.musigma.util.function.UncheckedConsumer;
 import org.musigma.util.function.UncheckedFunction;
 import org.musigma.util.function.UncheckedPredicate;
 
-import java.util.NoSuchElementException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 
@@ -78,7 +78,6 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
         final Executor executor = this.executor;
         this.executor = null;
         try {
-            // TODO: simplify resolved result logic due to lack of ControlThrowable
             Callable<T> resolvedResult = null;
             switch (transformType) {
                 case noop:
@@ -86,17 +85,18 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
 
                 case map: {
                     final UncheckedFunction<? super F, ? extends T> f = (UncheckedFunction<? super F, ? extends T>) function;
-                    resolvedResult = value.isSuccess() ? Thunk.value(f.apply(value.call())) : value.recast();
+                    resolvedResult = value.map(f);
                     break;
                 }
 
                 case flatMap: {
                     if (value.isSuccess()) {
-                        final Object f = function.apply(value.call());
-                        if (f instanceof DefaultPromise) {
-                            ((DefaultPromise<T>) f).linkRootOf(this, null);
+                        final UncheckedFunction<? super F, ? extends Future<T>> f = (UncheckedFunction) function;
+                        final Future<T> future = f.apply(value.call());
+                        if (future instanceof DefaultPromise) {
+                            ((DefaultPromise<T>) future).linkRootOf(this, null);
                         } else {
-                            completeWith((Future<T>) f);
+                            completeWith(future);
                         }
                     } else {
                         resolvedResult = value.recastIfError();
@@ -105,35 +105,38 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
                 }
 
                 case transform: {
-                    resolvedResult = (Thunk<T>) function.apply(value);
+                    final UncheckedFunction<Thunk<F>, ? extends Callable<T>> f = (UncheckedFunction) function;
+                    resolvedResult = f.apply(value);
                     break;
                 }
 
                 case transformWith: {
-                    final UncheckedFunction<Thunk<F>, Future<T>> f = (UncheckedFunction) function;
+                    final UncheckedFunction<Thunk<F>, ? extends Future<T>> f = (UncheckedFunction) function;
                     final Future<T> future = f.apply(value);
                     if (future instanceof DefaultPromise) {
                         ((DefaultPromise<T>) future).linkRootOf(this, null);
                     } else {
                         completeWith(future);
                     }
+                    break;
                 }
 
                 case onComplete: {
-                    function.apply(value);
+                    final UncheckedConsumer<Thunk<F>> onComplete = (UncheckedConsumer) function;
+                    onComplete.accept(value);
                     break;
                 }
 
                 case recover: {
                     // F == T
-                    Callable<F> fallback;
+                    final Thunk<F> fallback;
                     if (value.isSuccess()) {
                         fallback = value;
                     } else {
-                        final UncheckedFunction<Exception, F> f = (UncheckedFunction) function;
+                        final UncheckedFunction<Exception, ? extends F> f = (UncheckedFunction) function;
                         fallback = value.recover(f);
                     }
-                    resolvedResult = Thunk.from(fallback).recast();
+                    resolvedResult = fallback.recast();
                     break;
                 }
 
@@ -142,7 +145,7 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
                     if (value.isSuccess()) {
                         resolvedResult = value.recast();
                     } else {
-                        final UncheckedFunction<Exception, Future<T>> f = (UncheckedFunction) function;
+                        final UncheckedFunction<Exception, ? extends Future<T>> f = (UncheckedFunction) function;
                         final Future<T> fallback = f.apply(value.error());
                         if (fallback instanceof DefaultPromise) {
                             ((DefaultPromise<T>) fallback).linkRootOf(this, null);
@@ -156,8 +159,8 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
 
                 case filter: {
                     // F == T
-                    final UncheckedPredicate<F> predicate = (UncheckedPredicate) function;
-                    resolvedResult = value.isError() || predicate.test(value.call()) ? value.recast() : Thunk.error(new NoSuchElementException("filter predicate failed"));
+                    final UncheckedPredicate<? super F> predicate = (UncheckedPredicate) function;
+                    resolvedResult = value.filter(predicate).recast();
                     break;
                 }
 
