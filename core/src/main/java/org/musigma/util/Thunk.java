@@ -148,7 +148,7 @@ public final class Thunk<T> implements Callable<T> {
             return this;
         }
         try {
-            return predicate.test(value) ? this : error(new NoSuchElementException("predicated failed for " + value));
+            return predicate.test(value) ? this : error(new NoSuchElementException("predicate failed for " + value));
         } catch (final Exception e) {
             return error(e);
         }
