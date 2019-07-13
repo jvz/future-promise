@@ -1,20 +1,20 @@
 package org.musigma.util.concurrent;
 
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executor;
 
 public final class Executors {
 
     private Executors() {
     }
 
-    private static final ExecutorService COMMON = Batching.createDefaultExecutor(Throwable::printStackTrace);
-    private static final ExecutorService PARASITIC = new Batching.ParasiticExecutorService();
+    private static final Executor COMMON = Batching.createDefaultExecutor(Throwable::printStackTrace);
+    private static final Executor PARASITIC = new Batching.ParasiticExecutor();
 
-    public static ExecutorService common() {
+    public static Executor common() {
         return COMMON;
     }
 
-    public static ExecutorService parasitic() {
+    public static Executor parasitic() {
         return PARASITIC;
     }
 

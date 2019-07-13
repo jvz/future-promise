@@ -4,21 +4,20 @@ import org.junit.jupiter.api.Test;
 import org.musigma.util.Thunk;
 import org.musigma.util.function.UncheckedConsumer;
 import org.musigma.util.function.UncheckedFunction;
-import org.musigma.util.test.AbstractTestExecutorService;
 
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executor;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.musigma.util.test.Assertions.assertThrowsWrapped;
 
 class FutureTest {
 
-    Future<String> testAsync(final String s, final ExecutorService scheduler) {
+    Future<String> testAsync(final String s, final Executor executor) {
         switch (s) {
             case "Hello":
-                return Future.fromAsync(() -> "World", scheduler);
+                return Future.fromAsync(() -> "World", executor);
             case "Failure":
                 return Future.failed(new RuntimeException("expected exception"));
             case "NoReply":
@@ -36,29 +35,15 @@ class FutureTest {
         return Future.failed(new RuntimeException(msg));
     }
 
-    <T> T schedulerNotUsed(final UncheckedFunction<ExecutorService, T> function) throws Exception {
+    <T> T executorNotUsed(final UncheckedFunction<Executor, T> function) throws Exception {
         final Promise<Runnable> p = Promise.newPromise();
-        final ExecutorService unusedExecutorService = new AbstractTestExecutorService() {
-            @Override
-            public void execute(final Runnable runnable) {
-                p.success(runnable);
-            }
-
-            @Override
-            public void reportFailure(final Throwable t) {
-                if (t instanceof Error) {
-                    throw (Error) t;
-                }
-                p.failure((Exception) t);
-            }
-        };
-        T t = function.apply(unusedExecutorService);
+        T t = function.apply(p::success);
         assertFalse(p.future().getCurrent().isPresent(), "Future should not execute anything");
         return t;
     }
 
-    void schedulerNotUsedV(final UncheckedConsumer<ExecutorService> consumer) throws Exception {
-        schedulerNotUsed(consumer);
+    void executorNotUsedV(final UncheckedConsumer<Executor> consumer) throws Exception {
+        executorNotUsed(consumer);
     }
 
     @Test
@@ -114,11 +99,11 @@ class FutureTest {
         assertSame(never, Future.never());
         assertFalse(never.isDone());
         assertFalse(never.getCurrent().isPresent());
-        schedulerNotUsedV(s -> never.onComplete(ignored -> fail("should not execute onComplete"), s));
-        assertSame(never, schedulerNotUsed(s -> never.transform(UncheckedFunction.identity(), s)));
-        assertSame(never, schedulerNotUsed(s -> never.map(UncheckedFunction.identity(), s)));
-        assertSame(never, schedulerNotUsed(s -> never.flatMap(ignored -> failAsync("flatMap should not be called"))));
-        assertSame(never, schedulerNotUsed(s -> never.filter(ignored -> fail("should not execute filter"))));
+        executorNotUsedV(s -> never.onComplete(ignored -> fail("should not execute onComplete"), s));
+        assertSame(never, executorNotUsed(s -> never.transform(UncheckedFunction.identity(), s)));
+        assertSame(never, executorNotUsed(s -> never.map(UncheckedFunction.identity(), s)));
+        assertSame(never, executorNotUsed(s -> never.flatMap(ignored -> failAsync("flatMap should not be called"))));
+        assertSame(never, executorNotUsed(s -> never.filter(ignored -> fail("should not execute filter"))));
     }
 
 }

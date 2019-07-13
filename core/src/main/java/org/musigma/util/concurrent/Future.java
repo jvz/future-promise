@@ -9,7 +9,7 @@ import org.musigma.util.function.UncheckedPredicate;
 
 import java.util.Optional;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executor;
 
 // TODO: a lot of these methods can provide default implementations
 public interface Future<T> extends AwaitableFuture<T> {
@@ -32,16 +32,16 @@ public interface Future<T> extends AwaitableFuture<T> {
         return fromAsync(callable, Executors.common());
     }
 
-    static <T> Future<T> fromAsync(final Callable<T> callable, final ExecutorService scheduler) {
-        return VOID.map(ignored -> callable.call(), scheduler);
+    static <T> Future<T> fromAsync(final Callable<T> callable, final Executor executor) {
+        return VOID.map(ignored -> callable.call(), executor);
     }
 
     static <T> Future<T> fromDelegate(final Callable<Future<T>> callable) {
         return fromDelegate(callable, Executors.common());
     }
 
-    static <T> Future<T> fromDelegate(final Callable<Future<T>> callable, final ExecutorService scheduler) {
-        return VOID.flatMap(ignored -> callable.call(), scheduler);
+    static <T> Future<T> fromDelegate(final Callable<Future<T>> callable, final Executor executor) {
+        return VOID.flatMap(ignored -> callable.call(), executor);
     }
 
     static <T> Future<T> never() {
@@ -52,7 +52,7 @@ public interface Future<T> extends AwaitableFuture<T> {
         onComplete(consumer, Executors.common());
     }
 
-    void onComplete(final UncheckedConsumer<Thunk<T>> consumer, final ExecutorService scheduler);
+    void onComplete(final UncheckedConsumer<Thunk<T>> consumer, final Executor executor);
 
     Optional<Thunk<T>> getCurrent();
 
@@ -60,43 +60,43 @@ public interface Future<T> extends AwaitableFuture<T> {
         return map(function, Executors.common());
     }
 
-    <U> Future<U> map(final UncheckedFunction<? super T, ? extends U> function, final ExecutorService scheduler);
+    <U> Future<U> map(final UncheckedFunction<? super T, ? extends U> function, final Executor executor);
 
     default <U> Future<U> flatMap(final UncheckedFunction<? super T, ? extends Future<U>> function) {
         return flatMap(function, Executors.common());
     }
 
-    <U> Future<U> flatMap(final UncheckedFunction<? super T, ? extends Future<U>> function, final ExecutorService scheduler);
+    <U> Future<U> flatMap(final UncheckedFunction<? super T, ? extends Future<U>> function, final Executor executor);
 
     default Future<T> filter(final UncheckedPredicate<? super T> predicate) {
         return filter(predicate, Executors.common());
     }
 
-    Future<T> filter(final UncheckedPredicate<? super T> predicate, final ExecutorService scheduler);
+    Future<T> filter(final UncheckedPredicate<? super T> predicate, final Executor executor);
 
     default <U> Future<U> transform(final UncheckedFunction<Thunk<T>, ? extends Callable<U>> function) {
         return transform(function, Executors.common());
     }
 
-    <U> Future<U> transform(final UncheckedFunction<Thunk<T>, ? extends Callable<U>> function, final ExecutorService scheduler);
+    <U> Future<U> transform(final UncheckedFunction<Thunk<T>, ? extends Callable<U>> function, final Executor executor);
 
     default <U> Future<U> transformWith(final UncheckedFunction<Thunk<T>, ? extends Future<T>> function) {
         return transformWith(function, Executors.common());
     }
 
-    <U> Future<U> transformWith(final UncheckedFunction<Thunk<T>, ? extends Future<T>> function, final ExecutorService scheduler);
+    <U> Future<U> transformWith(final UncheckedFunction<Thunk<T>, ? extends Future<T>> function, final Executor executor);
 
     default Future<T> recover(final UncheckedFunction<Exception, ? extends T> function) {
         return recover(function, Executors.common());
     }
 
-    Future<T> recover(final UncheckedFunction<Exception, ? extends T> function, final ExecutorService scheduler);
+    Future<T> recover(final UncheckedFunction<Exception, ? extends T> function, final Executor executor);
 
     default Future<T> recoverWith(final UncheckedFunction<Exception, ? extends Future<T>> function) {
         return recoverWith(function, Executors.common());
     }
 
-    Future<T> recoverWith(final UncheckedFunction<Exception, ? extends Future<T>> function, final ExecutorService scheduler);
+    Future<T> recoverWith(final UncheckedFunction<Exception, ? extends Future<T>> function, final Executor executor);
 
     default Future<T> fallbackTo(final Future<T> fallback) {
         return fallback == this ? this : transformWith(thunk -> thunk.isSuccess() ? this : fallback, Executors.parasitic());
@@ -108,8 +108,8 @@ public interface Future<T> extends AwaitableFuture<T> {
 
     default <U, R> Future<R> zipWith(final Future<U> that,
                                      final UncheckedBiFunction<? super T, ? super U, ? extends R> function,
-                                     final ExecutorService scheduler) {
-        ExecutorService s = scheduler instanceof Batching.BatchingExecutorService ? scheduler : Executors.parasitic();
-        return flatMap(t -> that.map(u -> function.apply(t, u), s), s);
+                                     final Executor executor) {
+        Executor e = executor instanceof Batching.BatchingExecutor ? executor : Executors.parasitic();
+        return flatMap(t -> that.map(u -> function.apply(t, u), e), e);
     }
 }

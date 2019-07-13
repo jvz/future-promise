@@ -5,10 +5,9 @@ import org.junit.jupiter.api.DynamicNode;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
-import org.musigma.util.test.AbstractTestExecutorService;
-import org.musigma.util.test.Iterators;
 import org.musigma.util.Pair;
 import org.musigma.util.Thunk;
+import org.musigma.util.test.Iterators;
 import org.opentest4j.AssertionFailedError;
 
 import java.util.ArrayDeque;
@@ -23,13 +22,10 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -353,19 +349,8 @@ class DefaultPromiseTest {
             int chainId = chainPair.getLeft();
             Chain chain = chainPair.getRight();
             ChainState state;
-            ExecutorService inline = new AbstractTestExecutorService() {
-                @Override
-                public void execute(final Runnable command) {
-                    command.run();
-                }
-
-                @Override
-                public void reportFailure(final Throwable error) {
-                    error.printStackTrace();
-                }
-            };
             Callable<Void> attachHandler = () -> {
-                promise.onComplete(result -> handlerQueue.add(new Handler(result, handlerId)), inline);
+                promise.onComplete(result -> handlerQueue.add(new Handler(result, handlerId)), Runnable::run);
                 return null;
             };
             if (chain.isExecuting()) {
@@ -544,7 +529,7 @@ class DefaultPromiseTest {
             CountDownLatch startLatch = new CountDownLatch(1);
             CountDownLatch doneLatch = new CountDownLatch(flatMapCount + 1);
             Consumer<Runnable> execute = r -> {
-                final Batching.DefaultExecutorService es = (Batching.DefaultExecutorService) Executors.common();
+                final Batching.DefaultExecutor es = (Batching.DefaultExecutor) Executors.common();
                 es.execute(() -> {
                     try {
                         startLatch.await();

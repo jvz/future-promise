@@ -9,7 +9,7 @@ import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -28,7 +28,7 @@ class Never<T> implements Future<T> {
     }
 
     @Override
-    public void onComplete(final UncheckedConsumer<Thunk<T>> consumer, final ExecutorService executorService) {
+    public void onComplete(final UncheckedConsumer<Thunk<T>> consumer, final Executor executor) {
     }
 
     @Override
@@ -42,37 +42,37 @@ class Never<T> implements Future<T> {
     }
 
     @Override
-    public <U> Future<U> map(final UncheckedFunction<? super T, ? extends U> function, final ExecutorService executorService) {
+    public <U> Future<U> map(final UncheckedFunction<? super T, ? extends U> function, final Executor executor) {
         return recast();
     }
 
     @Override
-    public <U> Future<U> flatMap(final UncheckedFunction<? super T, ? extends Future<U>> function, final ExecutorService executorService) {
+    public <U> Future<U> flatMap(final UncheckedFunction<? super T, ? extends Future<U>> function, final Executor executor) {
         return recast();
     }
 
     @Override
-    public Future<T> filter(final UncheckedPredicate<? super T> predicate, final ExecutorService executorService) {
+    public Future<T> filter(final UncheckedPredicate<? super T> predicate, final Executor executor) {
         return this;
     }
 
     @Override
-    public <U> Future<U> transform(final UncheckedFunction<Thunk<T>, ? extends Callable<U>> function, final ExecutorService executorService) {
+    public <U> Future<U> transform(final UncheckedFunction<Thunk<T>, ? extends Callable<U>> function, final Executor executor) {
         return recast();
     }
 
     @Override
-    public <U> Future<U> transformWith(final UncheckedFunction<Thunk<T>, ? extends Future<T>> function, final ExecutorService executorService) {
+    public <U> Future<U> transformWith(final UncheckedFunction<Thunk<T>, ? extends Future<T>> function, final Executor executor) {
         return recast();
     }
 
     @Override
-    public Future<T> recover(final UncheckedFunction<Exception, ? extends T> function, final ExecutorService executorService) {
+    public Future<T> recover(final UncheckedFunction<Exception, ? extends T> function, final Executor executor) {
         return this;
     }
 
     @Override
-    public Future<T> recoverWith(final UncheckedFunction<Exception, ? extends Future<T>> function, final ExecutorService executorService) {
+    public Future<T> recoverWith(final UncheckedFunction<Exception, ? extends Future<T>> function, final Executor executor) {
         return this;
     }
 

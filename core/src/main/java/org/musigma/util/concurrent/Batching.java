@@ -10,6 +10,7 @@ import java.util.Objects;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.Semaphore;
@@ -41,7 +42,7 @@ class Batching {
         }
     }
 
-    static DefaultExecutorService createDefaultExecutor(final Consumer<Throwable> reporter) {
+    static DefaultExecutor createDefaultExecutor(final Consumer<Throwable> reporter) {
         final int parallelism = Math.min(
                 Math.max(getInt("org.musigma.util.concurrent.minThreads", "1"),
                         getInt("org.musigma.util.concurrent.numThreads", "x1")),
@@ -49,10 +50,10 @@ class Batching {
         final int maxBlockers = getInt("org.musigma.util.concurrent.maxExtraThreads", "256");
         final Thread.UncaughtExceptionHandler uncaughtExceptionHandler = (t, e) -> reporter.accept(e);
         final DefaultThreadFactory threadFactory = new DefaultThreadFactory(true, maxBlockers, "global-scheduler", uncaughtExceptionHandler);
-        return new DefaultExecutorService(parallelism, threadFactory, uncaughtExceptionHandler);
+        return new DefaultExecutor(parallelism, threadFactory, uncaughtExceptionHandler);
     }
 
-    interface BatchingExecutorService<Task extends AbstractTask> extends ErrorReportingExecutorService {
+    interface BatchingExecutor<Task extends AbstractTask> extends Executor {
         Task getCurrentTask();
 
         void setCurrentTask(final Task task);
@@ -60,19 +61,21 @@ class Batching {
         void submitForExecution(final Runnable runnable);
 
         void batch(final Runnable runnable);
+
+        void reportFailure(final Throwable error);
     }
 
-    abstract static class AbstractTask<BatchingES extends BatchingExecutorService> {
-        final BatchingES executorService;
+    abstract static class AbstractTask<BatchingExecutorT extends BatchingExecutor> {
+        final BatchingExecutorT executor;
         // TODO: this can be optimized by unboxing the first Runnable
         final List<Runnable> runnables;
 
-        AbstractTask(final BatchingES executorService, final Runnable runnable) {
-            this(executorService, Collections.singletonList(runnable));
+        AbstractTask(final BatchingExecutorT executor, final Runnable runnable) {
+            this(executor, Collections.singletonList(runnable));
         }
 
-        AbstractTask(final BatchingES executorService, final List<Runnable> runnables) {
-            this.executorService = executorService;
+        AbstractTask(final BatchingExecutorT executor, final List<Runnable> runnables) {
+            this.executor = executor;
             this.runnables = new ArrayList<>(runnables);
         }
 
@@ -94,7 +97,7 @@ class Batching {
         }
     }
 
-    interface AsynchronousBatchingExecutorService extends BatchingExecutorService<AsynchronousTask> {
+    interface AsynchronousBatchingExecutor extends BatchingExecutor<AsynchronousTask> {
         ThreadLocal<AsynchronousTask> asyncContext();
 
         @Override
@@ -123,7 +126,7 @@ class Batching {
         }
     }
 
-    static class AsynchronousTask extends AbstractTask<AsynchronousBatchingExecutorService> implements Runnable, BlockContext, UncheckedFunction<BlockContext, Throwable> {
+    static class AsynchronousTask extends AbstractTask<AsynchronousBatchingExecutor> implements Runnable, BlockContext, UncheckedFunction<BlockContext, Throwable> {
 
         private static final BlockContext MISSING_PARENT_BLOCK_CONTEXT = new BlockContext() {
             @Override
@@ -134,17 +137,17 @@ class Batching {
 
         private BlockContext parentBlockContext = MISSING_PARENT_BLOCK_CONTEXT;
 
-        AsynchronousTask(final AsynchronousBatchingExecutorService executorService, final Runnable runnable) {
-            super(executorService, runnable);
+        AsynchronousTask(final AsynchronousBatchingExecutor executor, final Runnable runnable) {
+            super(executor, runnable);
         }
 
-        AsynchronousTask(final AsynchronousBatchingExecutorService executorService, final List<Runnable> runnables) {
-            super(executorService, runnables);
+        AsynchronousTask(final AsynchronousBatchingExecutor executor, final List<Runnable> runnables) {
+            super(executor, runnables);
         }
 
         @Override
         public void run() {
-            executorService.setCurrentTask(this); // later cleared in apply()
+            executor.setCurrentTask(this); // later cleared in apply()
             Throwable failure;
             try {
                 failure = resubmit(this.using(this));
@@ -159,7 +162,7 @@ class Batching {
         @Override
         public <T> T blockOn(final Callable<T> thunk) throws Exception {
             if (isBlocking()) {
-                executorService.submitForExecution(cloneAndClear());
+                executor.submitForExecution(cloneAndClear());
             }
             return parentBlockContext.blockOn(thunk);
         }
@@ -174,7 +177,7 @@ class Batching {
                 return throwable;
             } finally {
                 parentBlockContext = MISSING_PARENT_BLOCK_CONTEXT;
-                executorService.clearCurrentTask();
+                executor.clearCurrentTask();
             }
         }
 
@@ -183,7 +186,7 @@ class Batching {
                 return throwable;
             }
             try {
-                executorService.submitForExecution(this);
+                executor.submitForExecution(this);
                 return throwable;
             } catch (final Throwable t) {
                 if (Exceptions.isFatal(t)) {
@@ -196,13 +199,13 @@ class Batching {
         }
 
         private AsynchronousTask cloneAndClear() {
-            AsynchronousTask task = new AsynchronousTask(executorService, runnables);
+            AsynchronousTask task = new AsynchronousTask(executor, runnables);
             runnables.clear();
             return task;
         }
     }
 
-    interface SynchronousBatchingExecutorService extends BatchingExecutorService<SynchronousTask> {
+    interface SynchronousBatchingExecutor extends BatchingExecutor<SynchronousTask> {
         int getPreBatchTaskCount();
 
         void setPreBatchTaskCount(final int count);
@@ -234,9 +237,9 @@ class Batching {
         }
     }
 
-    static class SynchronousTask extends AbstractTask<SynchronousBatchingExecutorService> implements Runnable {
-        SynchronousTask(final SynchronousBatchingExecutorService executorService, final Runnable runnable) {
-            super(executorService, runnable);
+    static class SynchronousTask extends AbstractTask<SynchronousBatchingExecutor> implements Runnable {
+        SynchronousTask(final SynchronousBatchingExecutor executor, final Runnable runnable) {
+            super(executor, runnable);
         }
 
         @Override
@@ -246,7 +249,7 @@ class Batching {
                     runN(RUN_LIMIT);
                 } catch (final Throwable throwable) {
                     Exceptions.rethrowIfFatal(throwable);
-                    executorService.reportFailure(throwable);
+                    executor.reportFailure(throwable);
                 }
             }
         }
@@ -339,10 +342,10 @@ class Batching {
         }
     }
 
-    static class DefaultExecutorService extends ForkJoinPool implements AsynchronousBatchingExecutorService {
+    static class DefaultExecutor extends ForkJoinPool implements AsynchronousBatchingExecutor {
         private final ThreadLocal<AsynchronousTask> asyncContext = new ThreadLocal<>();
 
-        private DefaultExecutorService(final int parallelism, final ForkJoinWorkerThreadFactory factory, final Thread.UncaughtExceptionHandler handler) {
+        private DefaultExecutor(final int parallelism, final ForkJoinWorkerThreadFactory factory, final Thread.UncaughtExceptionHandler handler) {
             super(parallelism, factory, handler, true);
         }
 
@@ -375,7 +378,7 @@ class Batching {
         }
     }
 
-    static class ParasiticExecutorService extends AbstractExecutorService implements SynchronousBatchingExecutorService {
+    static class ParasiticExecutor extends AbstractExecutorService implements SynchronousBatchingExecutor {
 
         private final ThreadLocal<Object> syncContext = new ThreadLocal<>();
 

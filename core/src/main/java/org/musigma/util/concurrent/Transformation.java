@@ -6,7 +6,7 @@ import org.musigma.util.function.UncheckedPredicate;
 
 import java.util.NoSuchElementException;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executor;
 
 @Batchable
 class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Runnable {
@@ -14,23 +14,23 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
     enum Type {
         noop, map, flatMap, transform, transformWith, onComplete, recover, recoverWith, filter;
 
-        <F, T> Transformation<F, T> using(final UncheckedFunction<?, ?> function, final ExecutorService executorService) {
-            return new Transformation<>(function, executorService, null, this);
+        <F, T> Transformation<F, T> using(final UncheckedFunction<?, ?> function, final Executor executor) {
+            return new Transformation<>(function, executor, null, this);
         }
     }
 
     static Transformation<?, ?> NOOP = Type.noop.using(UncheckedFunction.identity(), Executors.parasitic());
 
     private UncheckedFunction<Object, Object> function;
-    private ExecutorService executorService;
+    private Executor executor;
     private Callable<F> argument;
     private Type transformType;
 
     @SuppressWarnings("unchecked")
-    private Transformation(final UncheckedFunction<?, ?> function, final ExecutorService executorService, final Callable<F> argument, final Type transformType) {
+    private Transformation(final UncheckedFunction<?, ?> function, final Executor executor, final Callable<F> argument, final Type transformType) {
         super();
         this.function = (UncheckedFunction<Object, Object>) function;
-        this.executorService = executorService;
+        this.executor = executor;
         this.argument = argument;
         this.transformType = transformType;
     }
@@ -39,25 +39,25 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
     public void submitWithValue(final Callable<F> resolved) {
         argument = resolved;
         try {
-            executorService.execute(this);
+            executor.execute(this);
         } catch (final Exception e) {
-            final ExecutorService executorService = this.executorService;
-            this.executorService = null;
+            final Executor executor = this.executor;
+            this.executor = null;
             function = null;
             argument = null;
-            handleFailure(e, executorService);
+            handleFailure(e, executor);
         }
     }
 
-    private void handleFailure(final Exception e, final ExecutorService executorService) {
+    private void handleFailure(final Exception e, final Executor executor) {
         final boolean interrupted = e instanceof InterruptedException;
         final boolean completed = tryComplete(ref.get(), Thunk.error(e));
         if (completed && interrupted) {
             Thread.currentThread().interrupt();
         }
         if (transformType == Type.onComplete || !completed) {
-            if (executorService instanceof Batching.BatchingExecutorService) {
-                ((Batching.BatchingExecutorService) executorService).reportFailure(e);
+            if (executor instanceof Batching.BatchingExecutor) {
+                ((Batching.BatchingExecutor) executor).reportFailure(e);
             } else {
                 e.printStackTrace();
             }
@@ -75,9 +75,10 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
         this.argument = null;
         final UncheckedFunction<Object, Object> function = this.function;
         this.function = null;
-        final ExecutorService executorService = this.executorService;
-        this.executorService = null;
+        final Executor executor = this.executor;
+        this.executor = null;
         try {
+            // TODO: simplify resolved result logic due to lack of ControlThrowable
             Callable<T> resolvedResult = null;
             switch (transformType) {
                 case noop:
@@ -167,7 +168,7 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
                 tryComplete(ref.get(), resolvedResult);
             }
         } catch (Exception e) {
-            handleFailure(e, executorService);
+            handleFailure(e, executor);
         }
     }
 
