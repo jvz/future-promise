@@ -163,7 +163,7 @@ public final class Thunk<T> implements Callable<T> {
         }
     }
 
-    public Thunk<T> recover(final UncheckedFunction<Exception, T> function) {
+    public Thunk<T> recover(final UncheckedFunction<Exception, ? extends T> function) {
         try {
             return isSuccess() ? this : value(function.apply(error));
         } catch (final Exception e) {
