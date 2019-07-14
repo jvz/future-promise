@@ -91,7 +91,8 @@ class Batching {
             if (n < 0) {
                 throw new IllegalArgumentException("n must be non-negative");
             }
-            for (int i = 0; i < n && i < runnables.size(); i++) {
+            int limit = Math.min(n, runnables.size());
+            for (int i = 0; i < limit; i++) {
                 runnables.remove(0).run();
             }
         }
@@ -225,7 +226,7 @@ class Batching {
                     } else {
                         SynchronousTask task = new SynchronousTask(this, runnable);
                         setCurrentTask(task);
-                        submitForExecution(runnable);
+                        submitForExecution(task);
                     }
                 } catch (final Throwable t) {
                     Exceptions.rethrowIfFatal(t);
