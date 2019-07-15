@@ -56,8 +56,8 @@ class Transformation<F, T> extends DefaultPromise<T> implements Callbacks<F>, Ru
             Thread.currentThread().interrupt();
         }
         if (transformType == Type.onComplete || !completed) {
-            if (executor instanceof Batching.BatchingExecutor) {
-                ((Batching.BatchingExecutor) executor).reportFailure(e);
+            if (executor instanceof Blocking.BatchingExecutor) {
+                ((Blocking.BatchingExecutor) executor).exceptionHandler.accept(e);
             } else {
                 e.printStackTrace();
             }
