@@ -5,6 +5,7 @@ import org.junit.jupiter.api.DynamicNode;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
+import org.junit.jupiter.api.TestReporter;
 import org.musigma.util.Pair;
 import org.musigma.util.Thunk;
 import org.musigma.util.test.Iterators;
@@ -523,20 +524,19 @@ class DefaultPromiseTest {
     }
 
     @Test
-    void testFlatMapLinking() throws InterruptedException {
+    void testFlatMapLinking(final TestReporter reporter) throws InterruptedException {
         for (int i = 0; i < 100; i++) {
             int flatMapCount = 100;
             CountDownLatch startLatch = new CountDownLatch(1);
             CountDownLatch doneLatch = new CountDownLatch(flatMapCount + 1);
             Consumer<Runnable> execute = r -> {
-                final Batching.DefaultExecutor es = (Batching.DefaultExecutor) Executors.common();
-                es.execute(() -> {
+                Executors.common().execute(() -> {
                     try {
                         startLatch.await();
                         r.run();
                         doneLatch.countDown();
-                    } catch (Exception e) {
-                        es.reportFailure(e);
+                    } catch (final Exception e) {
+                        reporter.publishEntry(e.toString());
                     }
                 });
             };

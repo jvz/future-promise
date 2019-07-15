@@ -7,8 +7,9 @@ public final class Executors {
     private Executors() {
     }
 
-    private static final Executor COMMON = Batching.createDefaultExecutor(Throwable::printStackTrace);
-    private static final Executor PARASITIC = new Batching.ParasiticExecutor();
+    private static final Thread.UncaughtExceptionHandler DEFAULT_HANDLER = (t, e) -> e.printStackTrace();
+    private static final Executor COMMON = Blocking.newGlobalExecutor(DEFAULT_HANDLER);
+    private static final Executor PARASITIC = Blocking.newParasiticExecutor(DEFAULT_HANDLER);
 
     public static Executor common() {
         return COMMON;
