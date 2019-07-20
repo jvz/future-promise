@@ -11,7 +11,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
 
-public final class Batching {
+final class Batching {
 
     private Batching() {
     }
