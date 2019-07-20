@@ -109,7 +109,7 @@ public interface Future<T> extends AwaitableFuture<T> {
     default <U, R> Future<R> zipWith(final Future<U> that,
                                      final UncheckedBiFunction<? super T, ? super U, ? extends R> function,
                                      final Executor executor) {
-        Executor e = executor instanceof Blocking.BatchingExecutor ? executor : Executors.parasitic();
+        Executor e = executor instanceof Batching.BatchingExecutor ? executor : Executors.parasitic();
         return flatMap(t -> that.map(u -> function.apply(t, u), e), e);
     }
 }

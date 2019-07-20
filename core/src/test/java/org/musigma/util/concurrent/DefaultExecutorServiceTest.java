@@ -11,7 +11,7 @@ class DefaultExecutorServiceTest {
     @Test
     void testDefaultSchedulerReportsUncaughtExceptions() throws ExecutionException, InterruptedException {
         Promise<Throwable> p = Promise.newPromise();
-        try (Blocking.BatchingExecutor executor = Blocking.newGlobalExecutor((t, e) -> p.trySuccess(e))) {
+        try (Batching.BatchingExecutor executor = Batching.newBatchingExecutor((t, e) -> p.trySuccess(e))) {
             RuntimeException e = new RuntimeException();
             executor.execute(() -> {
                 throw e;

@@ -8,8 +8,8 @@ public final class Executors {
     }
 
     private static final Thread.UncaughtExceptionHandler DEFAULT_HANDLER = (t, e) -> e.printStackTrace();
-    private static final Executor COMMON = Blocking.newGlobalExecutor(DEFAULT_HANDLER);
-    private static final Executor PARASITIC = Blocking.newParasiticExecutor(DEFAULT_HANDLER);
+    private static final Executor COMMON = Batching.newBatchingExecutor(DEFAULT_HANDLER);
+    private static final Executor PARASITIC = Batching.newParasiticExecutor(DEFAULT_HANDLER);
 
     public static Executor common() {
         return COMMON;
