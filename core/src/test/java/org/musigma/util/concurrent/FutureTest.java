@@ -14,19 +14,6 @@ import static org.musigma.util.test.Assertions.assertThrowsWrapped;
 
 class FutureTest {
 
-    Future<String> testAsync(final String s, final Executor executor) {
-        switch (s) {
-            case "Hello":
-                return Future.fromAsync(() -> "World", executor);
-            case "Failure":
-                return Future.failed(new RuntimeException("expected exception"));
-            case "NoReply":
-                return Promise.<String>newPromise().future();
-            default:
-                throw new IllegalArgumentException(s);
-        }
-    }
-
     <T> T fail(final String msg) {
         throw new AssertionError(msg);
     }
