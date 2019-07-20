@@ -266,7 +266,7 @@ public class Blocking {
                     error = resubmit(using(blocker -> {
                         try {
                             parentBlocker = blocker;
-                            block();
+                            ForkJoinPool.managedBlock(this);
                             return null;
                         } catch (final Exception e) {
                             return e;
