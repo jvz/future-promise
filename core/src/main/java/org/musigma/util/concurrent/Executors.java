@@ -1,7 +1,10 @@
 package org.musigma.util.concurrent;
 
+import org.apiguardian.api.API;
+
 import java.util.concurrent.Executor;
 
+@API(status = API.Status.EXPERIMENTAL)
 public final class Executors {
 
     private Executors() {
