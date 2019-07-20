@@ -1,7 +1,10 @@
 package org.musigma.util;
 
+import org.apiguardian.api.API;
+
 import java.util.concurrent.Callable;
 
+@API(status = API.Status.EXPERIMENTAL)
 public final class Lazy<T> implements Callable<T> {
 
     private final Callable<T> lazyValue;

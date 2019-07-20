@@ -1,5 +1,6 @@
 package org.musigma.util.concurrent;
 
+import org.apiguardian.api.API;
 import org.musigma.util.Thunk;
 import org.musigma.util.function.UncheckedFunction;
 
@@ -16,6 +17,7 @@ public final class Blocking {
     }
 
     // TODO: this should be merged into Future since wrapper blocks aren't a common Java idiom
+    @API(status = API.Status.EXPERIMENTAL)
     public static <T> T blocking(final Callable<T> callable) throws Exception {
         return Blocker.current().blockOn(callable);
     }

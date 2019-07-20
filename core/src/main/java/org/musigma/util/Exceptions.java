@@ -1,8 +1,11 @@
 package org.musigma.util;
 
+import org.apiguardian.api.API;
+
 /**
  * Exception utilities for dealing with checked and fatal exceptions.
  */
+@API(status = API.Status.INTERNAL)
 public final class Exceptions {
 
     private Exceptions() {

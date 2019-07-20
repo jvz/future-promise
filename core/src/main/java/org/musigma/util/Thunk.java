@@ -1,5 +1,6 @@
 package org.musigma.util;
 
+import org.apiguardian.api.API;
 import org.musigma.util.function.UncheckedFunction;
 import org.musigma.util.function.UncheckedPredicate;
 
@@ -13,6 +14,7 @@ import java.util.concurrent.Callable;
  *
  * @param <T> return type of this thunk
  */
+@API(status = API.Status.EXPERIMENTAL)
 public final class Thunk<T> implements Callable<T> {
 
     private final Exception error;

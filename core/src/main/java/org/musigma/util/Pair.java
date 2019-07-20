@@ -1,8 +1,11 @@
 package org.musigma.util;
 
+import org.apiguardian.api.API;
+
 import java.util.Map;
 import java.util.Objects;
 
+@API(status = API.Status.EXPERIMENTAL)
 public final class Pair<A, B> implements Map.Entry<A, B> {
 
     private final A left;

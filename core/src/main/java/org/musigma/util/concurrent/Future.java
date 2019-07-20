@@ -1,5 +1,6 @@
 package org.musigma.util.concurrent;
 
+import org.apiguardian.api.API;
 import org.musigma.util.Pair;
 import org.musigma.util.Thunk;
 import org.musigma.util.function.UncheckedBiFunction;
@@ -12,6 +13,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 
 // TODO: a lot of these methods can provide default implementations
+@API(status = API.Status.EXPERIMENTAL)
 public interface Future<T> extends AwaitableFuture<T> {
 
     Future<Void> VOID = from(() -> null);

@@ -1,8 +1,11 @@
 package org.musigma.util.concurrent;
 
+import org.apiguardian.api.API;
+
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+@API(status = API.Status.EXPERIMENTAL)
 public interface Awaitable {
 
     void await() throws InterruptedException;
