@@ -23,16 +23,26 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
     // Link<T>
     final AtomicReference<Object> ref;
 
+    // TODO: extract a promise factory SPI of some sort
+
+    // TODO: can start moving Callbacks, CompletionLatch, Link, ManyCallbacks, and Transformation here
+
+    /**
+     * Constructs an unfulfilled promise.
+     */
     DefaultPromise() {
         this(Transformation.NOOP);
     }
 
-    private DefaultPromise(final Object initialValue) {
-        ref = new AtomicReference<>(initialValue);
-    }
-
+    /**
+     * Constructs a pre-filled promise from the result of a Callable.
+     */
     DefaultPromise(final Callable<T> result) {
         this((Object) Thunk.from(result));
+    }
+
+    private DefaultPromise(final Object initialValue) {
+        ref = new AtomicReference<>(initialValue);
     }
 
     @Override
@@ -138,9 +148,9 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
     }
 
     @Override
-    public boolean tryComplete(final Callable<T> result) {
+    public boolean tryComplete(final Callable<T> callable) {
         final Object state = ref.get();
-        return !(state instanceof Thunk) && tryComplete(state, result);
+        return !(state instanceof Thunk) && tryComplete(state, callable);
     }
 
     @SuppressWarnings("unchecked")
