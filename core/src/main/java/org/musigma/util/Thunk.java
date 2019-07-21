@@ -73,7 +73,7 @@ public final class Thunk<T> implements Callable<T> {
     }
 
     /**
-     * Returns the success value if successful or throws the error value if failed.
+     * Returns this success value or throws the error value.
      *
      * @return this success value if successful
      * @throws Exception this error if failure
@@ -87,11 +87,28 @@ public final class Thunk<T> implements Callable<T> {
     }
 
     /**
-     * Returns this error value or null if this is successful.
+     * Returns this success value or throws if this is an error value.
      *
-     * @return this error or null
+     * @return this success value if successful
+     * @throws IllegalStateException if this is an error value
+     */
+    public T value() {
+        if (isError()) {
+            throw new IllegalStateException("Cannot call Thunk::value on an error");
+        }
+        return value;
+    }
+
+    /**
+     * Returns this error value or throws if this is a success value.
+     *
+     * @return this error
+     * @throws IllegalStateException if this is a success value
      */
     public Exception error() {
+        if (!isError()) {
+            throw new IllegalStateException("Cannot call Thunk::error on a value");
+        }
         return error;
     }
 
@@ -156,8 +173,8 @@ public final class Thunk<T> implements Callable<T> {
         }
     }
 
-    public <U> Thunk<U> transform(final UncheckedFunction<? super T, ? extends Callable<U>> ifSuccess,
-                                  final UncheckedFunction<Exception, ? extends Callable<U>> ifError) {
+    public <U> Thunk<U> transformWith(final UncheckedFunction<? super T, ? extends Callable<U>> ifSuccess,
+                                      final UncheckedFunction<Exception, ? extends Callable<U>> ifError) {
         try {
             return from(isSuccess() ? ifSuccess.apply(value) : ifError.apply(error));
         } catch (final Exception e) {
