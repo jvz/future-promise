@@ -88,8 +88,9 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
     }
 
     @Override
-    public void await() throws InterruptedException {
+    public Future<T> await() throws InterruptedException {
         tryGet();
+        return this;
     }
 
     private Thunk<T> tryGet() throws InterruptedException {
@@ -115,11 +116,12 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
     }
 
     @Override
-    public void await(final long time, final TimeUnit unit) throws InterruptedException, TimeoutException {
+    public Future<T> await(final long time, final TimeUnit unit) throws InterruptedException, TimeoutException {
         final Thunk<T> result = tryGet(time, unit);
         if (result == null) {
             throw new TimeoutException("future timed out after " + time + " " + unit);
         }
+        return this;
     }
 
     private Thunk<T> tryGet(final long timeout, final TimeUnit unit) throws InterruptedException, TimeoutException {

@@ -11,6 +11,8 @@ import org.musigma.util.function.UncheckedPredicate;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Declarative transformations of asynchronous computation.
@@ -18,7 +20,7 @@ import java.util.concurrent.Executor;
  * @param <T> type of value being transformed
  */
 @API(status = API.Status.EXPERIMENTAL)
-public interface Future<T> extends AwaitableFuture<T> {
+public interface Future<T> extends java.util.concurrent.Future<T> {
 
     /**
      * Completed Future with no value.
@@ -95,13 +97,17 @@ public interface Future<T> extends AwaitableFuture<T> {
         return Never.getInstance();
     }
 
+    Optional<Thunk<T>> getCurrent();
+
+    Future<T> await() throws InterruptedException;
+
+    Future<T> await(final long time, final TimeUnit unit) throws InterruptedException, TimeoutException;
+
     default void onComplete(final UncheckedConsumer<Thunk<T>> consumer) {
         onComplete(Executors.common(), consumer);
     }
 
     void onComplete(final Executor executor, final UncheckedConsumer<Thunk<T>> consumer);
-
-    Optional<Thunk<T>> getCurrent();
 
     default <U> Future<U> transform(final UncheckedFunction<Thunk<T>, ? extends Callable<U>> function) {
         return transform(Executors.common(), function);

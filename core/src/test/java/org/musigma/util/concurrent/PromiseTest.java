@@ -76,7 +76,7 @@ class PromiseTest {
                 dynamicTest("shouldContainValue", () ->
                         assertEquals(result, future.getCurrent().orElseThrow(AssertionFailedError::new).call())),
                 dynamicTest("shouldReturnWhenReady", () ->
-                        assertTrue(Awaitable.await(future).isDone())),
+                        assertTrue(future.await().isDone())),
                 dynamicTest("shouldReturnResultWithGet", () ->
                         assertEquals(result, future.get())),
                 dynamicTest("shouldNotTimeout", () ->
@@ -134,7 +134,7 @@ class PromiseTest {
                             () -> assertEquals(errorMessage, error.getMessage()));
                 }),
                 dynamicTest("shouldNotThrowExceptionWhenReady", () ->
-                        assertTrue(Awaitable.await(future).isDone())),
+                        assertTrue(future.await().isDone())),
                 dynamicTest("shouldThrowWrappedExceptionWithGet", () ->
                         assertThrowsWrapped(errorType, future::get, errorMessage)),
                 dynamicTest("shouldRetainExceptionWithFilter", () ->

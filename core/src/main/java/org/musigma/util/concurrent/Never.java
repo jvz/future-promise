@@ -104,12 +104,14 @@ class Never<T> implements Future<T> {
     }
 
     @Override
-    public void await() throws InterruptedException {
+    public Future<T> await() throws InterruptedException {
         never.await();
+        return this;
     }
 
     @Override
-    public void await(final long time, final TimeUnit unit) throws InterruptedException, TimeoutException {
+    public Future<T> await(final long time, final TimeUnit unit) throws InterruptedException, TimeoutException {
         never.await(time, unit);
+        return this;
     }
 }
