@@ -1,4 +1,4 @@
-package org.musigma.util.concurrent;
+package org.musigma.util.concurrent.impl;
 
 import org.junit.jupiter.api.DynamicContainer;
 import org.junit.jupiter.api.DynamicNode;
@@ -8,6 +8,8 @@ import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.TestReporter;
 import org.musigma.util.Pair;
 import org.musigma.util.Thunk;
+import org.musigma.util.concurrent.Executors;
+import org.musigma.util.concurrent.Promise;
 import org.musigma.util.test.Iterators;
 import org.opentest4j.AssertionFailedError;
 

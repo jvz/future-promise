@@ -1,4 +1,7 @@
-package org.musigma.util.concurrent;
+package org.musigma.util.concurrent.impl;
+
+import org.apiguardian.api.API;
+import org.musigma.util.concurrent.Batchable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -11,7 +14,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
 
-final class Batching {
+@API(status = API.Status.INTERNAL)
+public final class Batching {
 
     private Batching() {
     }
@@ -23,7 +27,7 @@ final class Batching {
         }
     };
 
-    static BatchingExecutor newBatchingExecutor(final Thread.UncaughtExceptionHandler uncaught) {
+    public static BatchingExecutor newBatchingExecutor(final Thread.UncaughtExceptionHandler uncaught) {
         int parallelism = Math.min(
                 Math.max(getInt("org.musigma.util.concurrent.minThreads", "1"),
                         getInt("org.musigma.util.concurrent.numThreads", "x1")),
@@ -34,7 +38,7 @@ final class Batching {
         return new AsynchronousBatchingExecutor(pool, t -> uncaught.uncaughtException(Thread.currentThread(), t));
     }
 
-    static Executor newParasiticExecutor(final Thread.UncaughtExceptionHandler uncaught) {
+    public static Executor newParasiticExecutor(final Thread.UncaughtExceptionHandler uncaught) {
         return new SynchronousBatchingExecutor(Runnable::run, t -> uncaught.uncaughtException(Thread.currentThread(), t));
     }
 
@@ -59,7 +63,7 @@ final class Batching {
         void batch(final Runnable command);
     }
 
-    static abstract class BatchingExecutor implements Executor, Batcher, AutoCloseable {
+    public static abstract class BatchingExecutor implements Executor, Batcher, AutoCloseable {
         // this number might be tunable based on ForkJoinPool
         private static final int RUN_LIMIT = 1024;
 

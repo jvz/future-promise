@@ -1,6 +1,7 @@
-package org.musigma.util.concurrent;
+package org.musigma.util.concurrent.impl;
 
 import org.junit.jupiter.api.Test;
+import org.musigma.util.concurrent.Promise;
 
 import java.util.concurrent.ExecutionException;
 

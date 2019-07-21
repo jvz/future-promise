@@ -1,6 +1,7 @@
 package org.musigma.util.concurrent;
 
 import org.apiguardian.api.API;
+import org.musigma.util.concurrent.impl.Batching;
 
 import java.util.concurrent.Executor;
 

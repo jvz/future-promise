@@ -1,6 +1,10 @@
-package org.musigma.util.concurrent;
+package org.musigma.util.concurrent.impl;
 
 import org.musigma.util.Thunk;
+import org.musigma.util.concurrent.Batchable;
+import org.musigma.util.concurrent.Executors;
+import org.musigma.util.concurrent.Future;
+import org.musigma.util.concurrent.Promise;
 import org.musigma.util.function.UncheckedConsumer;
 import org.musigma.util.function.UncheckedFunction;
 import org.musigma.util.function.UncheckedPredicate;
@@ -14,7 +18,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.AbstractQueuedSynchronizer;
 
-import static org.musigma.util.concurrent.DefaultPromise.Transformation.Type.*;
+import static org.musigma.util.concurrent.impl.DefaultPromise.Transformation.Type.*;
 
 class DefaultPromise<T> implements Promise<T>, Future<T> {
 
@@ -23,8 +27,6 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
     // Callbacks<T>: Transformation<T, U> or ManyCallbacks<T>
     // Link<T>
     final AtomicReference<Object> ref;
-
-    // TODO: extract a promise factory SPI of some sort
 
     /**
      * Constructs an unfulfilled promise.

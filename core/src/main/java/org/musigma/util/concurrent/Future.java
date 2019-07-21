@@ -3,6 +3,7 @@ package org.musigma.util.concurrent;
 import org.apiguardian.api.API;
 import org.musigma.util.Pair;
 import org.musigma.util.Thunk;
+import org.musigma.util.concurrent.impl.Batching;
 import org.musigma.util.function.UncheckedBiFunction;
 import org.musigma.util.function.UncheckedConsumer;
 import org.musigma.util.function.UncheckedFunction;

@@ -18,10 +18,10 @@ public interface Promise<T> {
      * Creates a new incomplete Promise.
      *
      * @param <T> type of success value
-     * @return a new unfilled Promise
+     * @return a new incomplete Promise
      */
     static <T> Promise<T> newPromise() {
-        return new DefaultPromise<>();
+        return PromiseFactory.getInstance().newIncompletePromise();
     }
 
     /**
@@ -32,7 +32,7 @@ public interface Promise<T> {
      * @return a new completed Promise from the result of the Callable
      */
     static <T> Promise<T> from(final Callable<T> callable) {
-        return new DefaultPromise<>(callable);
+        return PromiseFactory.getInstance().newCompletePromise(callable);
     }
 
     /**

@@ -1,4 +1,4 @@
-package org.musigma.util.concurrent;
+package org.musigma.util.concurrent.impl;
 
 import org.apiguardian.api.API;
 import org.musigma.util.Thunk;
