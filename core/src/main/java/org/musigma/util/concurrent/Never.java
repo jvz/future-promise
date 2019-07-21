@@ -62,7 +62,7 @@ class Never<T> implements Future<T> {
     }
 
     @Override
-    public <U> Future<U> transformWith(final Executor executor, final UncheckedFunction<Thunk<T>, ? extends Future<T>> function) {
+    public <U> Future<U> transformWith(final Executor executor, final UncheckedFunction<Thunk<T>, ? extends Future<U>> function) {
         return recast();
     }
 

@@ -17,7 +17,6 @@ import java.util.concurrent.Executor;
  *
  * @param <T> type of value being transformed
  */
-// TODO: a lot of these methods can provide default implementations
 @API(status = API.Status.EXPERIMENTAL)
 public interface Future<T> extends AwaitableFuture<T> {
 
@@ -104,47 +103,58 @@ public interface Future<T> extends AwaitableFuture<T> {
 
     Optional<Thunk<T>> getCurrent();
 
-    default <U> Future<U> map(final UncheckedFunction<? super T, ? extends U> function) {
-        return map(Executors.common(), function);
-    }
-
-    <U> Future<U> map(final Executor executor, final UncheckedFunction<? super T, ? extends U> function);
-
-    default <U> Future<U> flatMap(final UncheckedFunction<? super T, ? extends Future<U>> function) {
-        return flatMap(Executors.common(), function);
-    }
-
-    <U> Future<U> flatMap(final Executor executor, final UncheckedFunction<? super T, ? extends Future<U>> function);
-
-    default Future<T> filter(final UncheckedPredicate<? super T> predicate) {
-        return filter(Executors.common(), predicate);
-    }
-
-    Future<T> filter(final Executor executor, final UncheckedPredicate<? super T> predicate);
-
     default <U> Future<U> transform(final UncheckedFunction<Thunk<T>, ? extends Callable<U>> function) {
         return transform(Executors.common(), function);
     }
 
     <U> Future<U> transform(final Executor executor, final UncheckedFunction<Thunk<T>, ? extends Callable<U>> function);
 
-    default <U> Future<U> transformWith(final UncheckedFunction<Thunk<T>, ? extends Future<T>> function) {
+    default <U> Future<U> transformWith(final UncheckedFunction<Thunk<T>, ? extends Future<U>> function) {
         return transformWith(Executors.common(), function);
     }
 
-    <U> Future<U> transformWith(final Executor executor, final UncheckedFunction<Thunk<T>, ? extends Future<T>> function);
+    <U> Future<U> transformWith(final Executor executor, final UncheckedFunction<Thunk<T>, ? extends Future<U>> function);
+
+    default <U> Future<U> map(final UncheckedFunction<? super T, ? extends U> function) {
+        return map(Executors.common(), function);
+    }
+
+    default <U> Future<U> map(final Executor executor, final UncheckedFunction<? super T, ? extends U> function) {
+        return transform(executor, t -> t.map(function));
+    }
+
+    default <U> Future<U> flatMap(final UncheckedFunction<? super T, ? extends Future<U>> function) {
+        return flatMap(Executors.common(), function);
+    }
+
+    @SuppressWarnings("unchecked")
+    default <U> Future<U> flatMap(final Executor executor, final UncheckedFunction<? super T, ? extends Future<U>> function) {
+        return transformWith(executor, t -> t.isSuccess() ? function.apply(t.value()) : (Future<U>) this);
+    }
+
+    default Future<T> filter(final UncheckedPredicate<? super T> predicate) {
+        return filter(Executors.common(), predicate);
+    }
+
+    default Future<T> filter(final Executor executor, final UncheckedPredicate<? super T> predicate) {
+        return transform(executor, t -> t.filter(predicate));
+    }
 
     default Future<T> recover(final UncheckedFunction<Exception, ? extends T> function) {
         return recover(Executors.common(), function);
     }
 
-    Future<T> recover(final Executor executor, final UncheckedFunction<Exception, ? extends T> function);
+    default Future<T> recover(final Executor executor, final UncheckedFunction<Exception, ? extends T> function) {
+        return transform(executor, t -> t.recover(function));
+    }
 
     default Future<T> recoverWith(final UncheckedFunction<Exception, ? extends Future<T>> function) {
         return recoverWith(Executors.common(), function);
     }
 
-    Future<T> recoverWith(final Executor executor, final UncheckedFunction<Exception, ? extends Future<T>> function);
+    default Future<T> recoverWith(final Executor executor, final UncheckedFunction<Exception, ? extends Future<T>> function) {
+        return transformWith(executor, t -> t.isSuccess() ? this : function.apply(t.error()));
+    }
 
     default Future<T> fallbackTo(final Future<T> fallback) {
         return fallback == this ? this : transformWith(Executors.parasitic(), thunk -> thunk.isSuccess() ? this : fallback);
