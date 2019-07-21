@@ -292,7 +292,7 @@ final class Batching {
         @Override
         boolean benefitsFromBatching(final Runnable command) {
             return command.getClass().isAnnotationPresent(Batchable.class) &&
-                    (!(command instanceof Transformation) || ((Transformation<?, ?>) command).benefitsFromBatching());
+                    (!(command instanceof DefaultPromise.Transformation) || ((DefaultPromise.Transformation<?, ?>) command).benefitsFromBatching());
         }
     }
 }
