@@ -351,7 +351,7 @@ class DefaultPromiseTest {
             Chain chain = chainPair.getRight();
             ChainState state;
             Callable<Void> attachHandler = () -> {
-                promise.onComplete(result -> handlerQueue.add(new Handler(result, handlerId)), Runnable::run);
+                promise.onComplete(Runnable::run, result -> handlerQueue.add(new Handler(result, handlerId)));
                 return null;
             };
             if (chain.isExecuting()) {

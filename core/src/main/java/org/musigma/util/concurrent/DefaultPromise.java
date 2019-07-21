@@ -100,7 +100,7 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
 
     private Thunk<T> awaitResult() throws InterruptedException {
         final CompletionLatch<T> latch = new CompletionLatch<>();
-        onComplete(latch, Executors.parasitic());
+        onComplete(Executors.parasitic(), latch);
         latch.acquireSharedInterruptibly(1);
         return latch.getResult();
     }
@@ -137,7 +137,7 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
 
     private Thunk<T> awaitResult(final long timeout, final TimeUnit unit) throws InterruptedException {
         final CompletionLatch<T> latch = new CompletionLatch<>();
-        onComplete(latch, Executors.parasitic());
+        onComplete(Executors.parasitic(), latch);
         latch.tryAcquireSharedNanos(1, unit.toNanos(timeout));
         return latch.getResult();
     }
@@ -236,13 +236,13 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
     }
 
     @Override
-    public void onComplete(final UncheckedConsumer<Thunk<T>> consumer, final Executor executor) {
+    public void onComplete(final Executor executor, final UncheckedConsumer<Thunk<T>> consumer) {
         dispatchOrAddCallbacks(onComplete.using(consumer, executor));
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    public <U> Future<U> map(final UncheckedFunction<? super T, ? extends U> function, final Executor executor) {
+    public <U> Future<U> map(final Executor executor, final UncheckedFunction<? super T, ? extends U> function) {
         final Object state = ref.get();
         if (state instanceof Thunk && ((Thunk<?>) state).isError()) {
             // fail fast
@@ -254,7 +254,7 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
 
     @SuppressWarnings("unchecked")
     @Override
-    public <U> Future<U> flatMap(final UncheckedFunction<? super T, ? extends Future<U>> function, final Executor executor) {
+    public <U> Future<U> flatMap(final Executor executor, final UncheckedFunction<? super T, ? extends Future<U>> function) {
         final Object state = ref.get();
         if (state instanceof Thunk && ((Thunk<?>) state).isError()) {
             // fail fast
@@ -265,7 +265,7 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
     }
 
     @Override
-    public Future<T> filter(final UncheckedPredicate<? super T> predicate, final Executor executor) {
+    public Future<T> filter(final Executor executor, final UncheckedPredicate<? super T> predicate) {
         final Object state = ref.get();
         if (state instanceof Thunk && ((Thunk<?>) state).isError()) {
             // fail fast
@@ -276,17 +276,17 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
     }
 
     @Override
-    public <U> Future<U> transform(final UncheckedFunction<Thunk<T>, ? extends Callable<U>> function, final Executor executor) {
+    public <U> Future<U> transform(final Executor executor, final UncheckedFunction<Thunk<T>, ? extends Callable<U>> function) {
         return dispatchOrAddCallbacks(transform.using(function, executor));
     }
 
     @Override
-    public <U> Future<U> transformWith(final UncheckedFunction<Thunk<T>, ? extends Future<T>> function, final Executor executor) {
+    public <U> Future<U> transformWith(final Executor executor, final UncheckedFunction<Thunk<T>, ? extends Future<T>> function) {
         return dispatchOrAddCallbacks(transformWith.using(function, executor));
     }
 
     @Override
-    public Future<T> recover(final UncheckedFunction<Exception, ? extends T> function, final Executor executor) {
+    public Future<T> recover(final Executor executor, final UncheckedFunction<Exception, ? extends T> function) {
         final Object state = ref.get();
         if (state instanceof Thunk && ((Thunk<?>) state).isSuccess()) {
             // recover fast
@@ -297,7 +297,7 @@ class DefaultPromise<T> implements Promise<T>, Future<T> {
     }
 
     @Override
-    public Future<T> recoverWith(final UncheckedFunction<Exception, ? extends Future<T>> function, final Executor executor) {
+    public Future<T> recoverWith(final Executor executor, final UncheckedFunction<Exception, ? extends Future<T>> function) {
         final Object state = ref.get();
         if (state instanceof Thunk && ((Thunk<?>) state).isSuccess()) {
             // recover fast

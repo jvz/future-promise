@@ -86,9 +86,9 @@ class FutureTest {
         assertSame(never, Future.never());
         assertFalse(never.isDone());
         assertFalse(never.getCurrent().isPresent());
-        executorNotUsedV(s -> never.onComplete(ignored -> fail("should not execute onComplete"), s));
-        assertSame(never, executorNotUsed(s -> never.transform(UncheckedFunction.identity(), s)));
-        assertSame(never, executorNotUsed(s -> never.map(UncheckedFunction.identity(), s)));
+        executorNotUsedV(s -> never.onComplete(s, ignored -> fail("should not execute onComplete")));
+        assertSame(never, executorNotUsed(s -> never.transform(s, UncheckedFunction.identity())));
+        assertSame(never, executorNotUsed(s -> never.map(s, UncheckedFunction.identity())));
         assertSame(never, executorNotUsed(s -> never.flatMap(ignored -> failAsync("flatMap should not be called"))));
         assertSame(never, executorNotUsed(s -> never.filter(ignored -> fail("should not execute filter"))));
     }

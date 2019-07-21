@@ -6,7 +6,7 @@ import org.musigma.util.Thunk;
 import java.util.concurrent.Callable;
 
 /**
- * Provides an asynchronously-completable object holder for either a success value or an exception.
+ * Asynchronously-completable object holder for either a success value or an exception.
  * Consumers of this promise should obtain a {@link #future() Future} reference from this Promise.
  *
  * @param <T> type of success value
@@ -101,7 +101,7 @@ public interface Promise<T> {
      */
     default void completeWith(final Future<T> other) {
         if (future() != other) {
-            other.onComplete(this::tryComplete, Executors.parasitic());
+            other.onComplete(Executors.parasitic(), this::tryComplete);
         }
     }
 
