@@ -16,10 +16,13 @@ public final class Blocking {
     private Blocking() {
     }
 
-    // TODO: this should be merged into Future since wrapper blocks aren't a common Java idiom
+    /**
+     * Wraps a Callable to indicate that its underlying computation may cause blocking.
+     * This is used to help improve performance and avoid deadlocking when executing blocking code asynchronously.
+     */
     @API(status = API.Status.EXPERIMENTAL)
-    public static <T> T blocking(final Callable<T> callable) throws Exception {
-        return Blocker.current().blockOn(callable);
+    public static <T> Callable<T> blocking(final Callable<T> callable) {
+        return () -> Blocker.current().blockOn(callable);
     }
 
     interface Blocker {
